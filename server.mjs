@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 const rootArgIndex = process.argv.indexOf('--root');
 const root = resolve(rootArgIndex >= 0 ? process.argv[rootArgIndex + 1] : fileURLToPath(new URL('.', import.meta.url)));
-const port = Number(process.env.PORT || 4173);
+const portArgIndex = process.argv.indexOf('--port');
+const port = Number(portArgIndex >= 0 ? process.argv[portArgIndex + 1] : process.env.PORT || 4173);
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -39,6 +40,16 @@ const server = createServer(async (request, response) => {
     response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
     response.end('Not found');
   }
+});
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`GrenMon could not start because port ${port} is already in use.`);
+    console.error(`Stop the existing server or choose another port, for example: npm start -- --port 4174`);
+  } else {
+    console.error(`GrenMon server error: ${error.message}`);
+  }
+  process.exitCode = 1;
 });
 
 server.listen(port, '0.0.0.0', () => {

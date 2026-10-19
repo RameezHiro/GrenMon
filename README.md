@@ -33,7 +33,13 @@ npm ci
 npm start
 ```
 
-Open <http://localhost:4173>. The same command serves the source files during development and accepts `PORT=8080 npm start` when another port is needed.
+Open <http://localhost:4173>. The same command serves the source files during development. If that port is already in use, use the cross-platform alternate-port form:
+
+```bash
+npm start -- --port 8080
+```
+
+The equivalent environment-variable form is `PORT=8080 npm start` on macOS/Linux or `$env:PORT=8080; npm start` in PowerShell.
 
 ## Test
 
