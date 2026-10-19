@@ -37,16 +37,16 @@ Open <http://localhost:4173>. The same command serves the source files during de
 
 ## Test
 
-The offline test command exercises the pure movement, interaction, encounter, and battle rules:
-
-```bash
-make test
-```
-
-Equivalent npm command:
+The canonical offline test command exercises the pure movement, interaction, encounter, and battle rules:
 
 ```bash
 npm test
+```
+
+On Unix-like systems, the repository also exposes the same check through Make:
+
+```bash
+make test
 ```
 
 ## Production build
