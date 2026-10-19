@@ -194,29 +194,78 @@ function drawCreature(creature, x, y, scale = 1, mirrored = false) {
     ctx.scale(-1, 1);
     x = 0;
   }
-  drawPixelRect(x - 42 * scale, y + 46 * scale, 84 * scale, 10 * scale, inkSoft);
+
+  const px = (offsetX, offsetY, width, height, color) => {
+    drawPixelRect(x + offsetX * scale, y + offsetY * scale, width * scale, height * scale, color);
+  };
+
+  drawPixelRect(x - 48 * scale, y + 48 * scale, 96 * scale, 10 * scale, inkSoft);
   if (creature.id === 'spriggle') {
-    drawPixelRect(x - 30 * scale, y - 35 * scale, 60 * scale, 76 * scale, creature.color);
-    drawPixelRect(x - 20 * scale, y - 53 * scale, 18 * scale, 27 * scale, creature.color);
-    drawPixelRect(x + 3 * scale, y - 53 * scale, 18 * scale, 27 * scale, creature.color);
-    drawPixelRect(x - 24 * scale, y - 13 * scale, 48 * scale, 44 * scale, '#8aa33f');
-    drawPixelRect(x - 17 * scale, y - 7 * scale, 8 * scale, 8 * scale, ink);
-    drawPixelRect(x + 9 * scale, y - 7 * scale, 8 * scale, 8 * scale, ink);
-    drawPixelRect(x - 8 * scale, y + 12 * scale, 16 * scale, 4 * scale, ink);
-    drawPixelRect(x - 44 * scale, y - 15 * scale, 20 * scale, 7 * scale, coral);
-    drawPixelRect(x + 24 * scale, y - 15 * scale, 20 * scale, 7 * scale, coral);
+    // Spriggle is a leafy seedling with a broad leaf-tail and little root feet.
+    px(25, -6, 28, 12, ink);
+    px(43, -17, 19, 14, ink);
+    px(52, -28, 12, 14, ink);
+    px(34, -19, 25, 10, citron);
+    px(48, -28, 11, 11, '#e8f1b5');
+    px(-25, -57, 18, 23, ink);
+    px(7, -58, 18, 24, ink);
+    px(-22, -61, 12, 20, citron);
+    px(10, -62, 14, 21, '#e8f1b5');
+    px(-31, -38, 62, 18, ink);
+    px(-37, -22, 74, 35, ink);
+    px(-29, 11, 58, 27, ink);
+    px(-22, 31, 16, 16, ink);
+    px(7, 31, 16, 16, ink);
+    px(-25, -35, 50, 15, creature.color);
+    px(-30, -20, 60, 30, creature.color);
+    px(-22, 9, 44, 25, '#8aa33f');
+    px(-16, 30, 11, 12, '#8aa33f');
+    px(7, 30, 11, 12, '#8aa33f');
+    px(-24, -27, 13, 8, '#e8f1b5');
+    px(11, -27, 13, 8, '#e8f1b5');
+    px(-20, -12, 7, 8, ink);
+    px(13, -12, 7, 8, ink);
+    px(-17, -10, 2, 2, paperLight);
+    px(16, -10, 2, 2, paperLight);
+    px(-8, 3, 16, 4, ink);
+    px(-5, 8, 10, 3, coral);
+    px(-38, -2, 12, 8, coral);
+    px(26, -2, 12, 8, coral);
+    px(-22, 42, 10, 5, ink);
+    px(12, 42, 10, 5, ink);
   } else {
-    drawPixelRect(x - 32 * scale, y - 31 * scale, 64 * scale, 70 * scale, creature.color);
-    drawPixelRect(x - 24 * scale, y - 48 * scale, 16 * scale, 24 * scale, creature.color);
-    drawPixelRect(x + 8 * scale, y - 48 * scale, 16 * scale, 24 * scale, creature.color);
-    drawPixelRect(x - 26 * scale, y - 11 * scale, 52 * scale, 45 * scale, '#b84138');
-    drawPixelRect(x - 18 * scale, y - 5 * scale, 7 * scale, 7 * scale, paperLight);
-    drawPixelRect(x + 11 * scale, y - 5 * scale, 7 * scale, 7 * scale, paperLight);
-    drawPixelRect(x - 14 * scale, y - 2 * scale, 3 * scale, 3 * scale, ink);
-    drawPixelRect(x + 15 * scale, y - 2 * scale, 3 * scale, 3 * scale, ink);
-    drawPixelRect(x - 9 * scale, y + 13 * scale, 18 * scale, 5 * scale, ink);
-    drawPixelRect(x - 41 * scale, y - 20 * scale, 16 * scale, 8 * scale, citron);
-    drawPixelRect(x + 25 * scale, y - 20 * scale, 16 * scale, 8 * scale, citron);
+    // Embercub is a flame-eared cub with a curled ember tail and visible paws.
+    px(27, 10, 22, 12, ink);
+    px(42, 0, 20, 13, ink);
+    px(53, -12, 15, 15, ink);
+    px(57, -24, 10, 15, coral);
+    px(45, 0, 18, 8, coral);
+    px(55, -12, 11, 12, '#fac1b0');
+    px(-25, -57, 18, 28, ink);
+    px(8, -58, 19, 29, ink);
+    px(-21, -61, 10, 24, coral);
+    px(11, -62, 12, 25, '#fac1b0');
+    px(-33, -34, 66, 17, ink);
+    px(-40, -18, 80, 36, ink);
+    px(-33, 15, 66, 27, ink);
+    px(-23, 34, 18, 13, ink);
+    px(6, 34, 18, 13, ink);
+    px(-27, -30, 54, 15, creature.color);
+    px(-34, -14, 68, 29, creature.color);
+    px(-27, 15, 54, 22, '#b84138');
+    px(-17, 18, 34, 17, '#ef7258');
+    px(-24, -23, 15, 8, '#fac1b0');
+    px(9, -23, 15, 8, '#fac1b0');
+    px(-20, -10, 8, 8, paperLight);
+    px(12, -10, 8, 8, paperLight);
+    px(-17, -7, 3, 3, ink);
+    px(15, -7, 3, 3, ink);
+    px(-11, 5, 22, 6, ink);
+    px(-5, 11, 10, 3, '#fac1b0');
+    px(-40, -3, 13, 8, citron);
+    px(27, -3, 13, 8, citron);
+    px(-24, 42, 13, 5, ink);
+    px(11, 42, 13, 5, ink);
   }
   ctx.restore();
 }
