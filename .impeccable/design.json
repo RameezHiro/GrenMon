@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-19T17:45:00+05:30",
+  "title": "Design System: GrenMon",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "primary", "displayName": "Deep route ink", "canonical": "#152f2c", "tonalRamp": ["#091211", "#102420", "#183832", "#27524b", "#3b5751", "#71817a", "#b0b7a4", "#f3e7c7"] },
+      "coral": { "role": "secondary", "displayName": "Registration coral", "canonical": "#ef7258", "tonalRamp": ["#39110b", "#6a2118", "#a23a2b", "#ce5542", "#ef7258", "#f39a84", "#fac1b0", "#fff6dc"] },
+      "citron": { "role": "secondary", "displayName": "Field citron", "canonical": "#c9dc57", "tonalRamp": ["#242c08", "#4a570f", "#788a1b", "#aabd38", "#c9dc57", "#d8e985", "#e8f1b5", "#fff6dc"] },
+      "paper": { "role": "neutral", "displayName": "Route paper", "canonical": "#f3e7c7", "tonalRamp": ["#2b281f", "#5a5140", "#897b61", "#b3a37e", "#d4c49d", "#e7d4a6", "#f0e2bd", "#fff6dc"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Route title", "purpose": "Place and creature names with a literary field-note voice." },
+      "label": { "displayName": "Plate metadata", "purpose": "Controls, coordinates, status, and edition marks." }
+    },
+    "shadows": [
+      { "name": "structural-print-offset", "value": "12px 14px 0 rgba(21, 47, 44, 0.12)", "purpose": "Makes the main game plate feel like a sheet slightly misregistered on the page." }
+    ],
+    "motion": [
+      { "name": "ink-lift", "value": "transform 140ms ease, background-color 140ms ease", "purpose": "Small control lift on hover without hiding state." }
+    ],
+    "breakpoints": [
+      { "name": "tablet", "value": "930px" },
+      { "name": "phone", "value": "580px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "A square ink action with a coral shortcut and citron hover registration.",
+      "html": "<button class=\"ds-btn-primary\">VINE SNAP <span>1</span></button>",
+      "css": ".ds-btn-primary { display:flex; justify-content:space-between; gap:18px; min-height:42px; padding:9px 12px; border:2px solid #152f2c; border-radius:0; color:#fff6dc; background:#152f2c; font:900 1rem 'Trebuchet MS', sans-serif; } .ds-btn-primary span { color:#c9dc57; font-size:.68rem; letter-spacing:.12em; } .ds-btn-primary:hover { background:#244b45; transform:translate(-2px,-2px); } .ds-btn-primary:focus-visible { outline:3px solid #ef7258; outline-offset:4px; }"
+    },
+    {
+      "name": "Route Plate",
+      "kind": "custom",
+      "refersTo": "field-card",
+      "description": "A square paper container for the playable Canvas map and its route metadata.",
+      "html": "<section class=\"ds-route-plate\"><div class=\"ds-route-label\">PLATE A — ROUTE STUDY</div><div class=\"ds-route-canvas\"></div></section>",
+      "css": ".ds-route-plate { padding:18px; border:2px solid #152f2c; background:#fff6dc; box-shadow:12px 14px 0 rgba(21,47,44,.12); } .ds-route-label { padding-bottom:12px; color:#152f2c; font:900 .67rem 'Trebuchet MS', sans-serif; letter-spacing:.14em; } .ds-route-canvas { min-height:220px; border:3px solid #152f2c; background:#e7d4a6; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Living Field Guide",
+    "overview": "GrenMon treats the game screen as a printed route plate: the map is the artifact, the player makes marks through it, and the surrounding copy behaves like an annotated research note. The visual language borrows the physical discipline of a two- or three-ink print run without borrowing any commercial game's characters or assets.",
+    "keyCharacteristics": ["Print-plate framing around the playable map.", "Square borders and registration offsets used as structural marks.", "Original creatures rendered from local pixel shapes.", "Exploration changes into a battle specimen plate."],
+    "rules": [
+      { "name": "The Registration Rule", "body": "Coral and citron marks should explain a state, a discovery, or a physical print layer; never scatter them as generic decoration.", "section": "colors" },
+      { "name": "The Two-Voice Rule", "body": "Use the serif display voice for place, creature, and section names; use the sans label voice for controls, measurements, and state.", "section": "typography" },
+      { "name": "The Flat Plate Rule", "body": "Keep map and note surfaces flat at rest. Use the registration offset only to show the game plate's physical relationship to the page.", "section": "elevation" }
+    ],
+    "dos": ["Do keep the map as the first and largest interaction surface.", "Do use original local shapes for characters and creatures.", "Do make keyboard actions visible in labels and keep focus rings clear.", "Do let coral and citron explain state or discovery."],
+    "donts": ["Don't add commercial creature names, copied sprites, or remote asset URLs.", "Don't replace the route plate with a generic card dashboard.", "Don't soften the system with pill-shaped controls or decorative glass.", "Don't use color alone to communicate battle state."]
+  }
+}
