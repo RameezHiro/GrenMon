@@ -190,7 +190,7 @@ function drawWorld() {
 function drawCreature(creature, x, y, scale = 1, mirrored = false) {
   ctx.save();
   if (mirrored) {
-    ctx.translate(x * 2, 0);
+    ctx.translate(x, 0);
     ctx.scale(-1, 1);
     x = 0;
   }
