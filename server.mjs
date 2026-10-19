@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rootArgIndex = process.argv.indexOf('--root');
@@ -18,10 +18,11 @@ const contentTypes = {
 
 const server = createServer(async (request, response) => {
   const requestPath = decodeURIComponent((request.url || '/').split('?')[0]);
-  const safePath = normalize(requestPath).replace(/^([.][.][\\/])+/, '');
-  const filePath = resolve(join(root, safePath === '/' ? 'index.html' : safePath));
+  const normalizedPath = normalize(requestPath).replace(/^([.][.][\\/])+/, '');
+  const relativePath = (normalizedPath === '/' || normalizedPath === '\\' ? 'index.html' : normalizedPath).replace(/^[/\\]+/, '');
+  const filePath = resolve(root, relativePath);
 
-  if (!filePath.startsWith(root)) {
+  if (filePath !== root && !filePath.startsWith(`${root}${sep}`)) {
     response.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
     response.end('Forbidden');
     return;
