@@ -51,6 +51,17 @@
   button{min-height:44px}.move-button:hover,.action-button:hover{transform:none}
 }
 
+@media (min-width:1001px){
+  /* Desktop battle decisions belong beside the arena, not below the fold. */
+  body.battle-active .research-column{display:flex;flex-direction:column}
+  body.battle-active .coral-note{order:1}
+  body.battle-active .battle-block{order:2;position:sticky;top:18px;z-index:10;background:var(--paper-light);box-shadow:6px 7px 0 rgba(17,43,41,.14)}
+  body.battle-active .target-block{order:3}
+  body.battle-active .specimen-block{order:4}
+  body.battle-active .captured-block{order:5}
+  body.battle-active .roster-block{order:6}
+}
+
 @media (max-width:640px){
   /* Keep the decision surface in the thumb zone during encounters. */
   body.battle-active{padding-bottom:260px}
