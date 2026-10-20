@@ -1,0 +1,7 @@
+.git
+.opencode
+.impeccable
+node_modules
+dist
+*.log
+.env

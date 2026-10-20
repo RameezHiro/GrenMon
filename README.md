@@ -24,6 +24,11 @@ Three.js is the only runtime dependency. The app does not need an API key. `.env
 ## Setup
 
 ```bash
+# Clone the repository and enter it.
+git clone https://github.com/RameezHiro/GrenMon.git
+cd GrenMon
+
+# Use the version pinned in .nvmrc (Node.js 22.14.0), then install the lockfile exactly.
 npm ci
 ```
 
@@ -71,10 +76,29 @@ The Vite build bundles the Three.js app into `dist/`. All geometry, data, and UI
 Build and run the reproducible production image:
 
 ```bash
-docker run --rm -p 4173:4173 grenmon
+docker build -t grenmon:local .
+docker run --rm -p 4173:4173 grenmon:local
 ```
 
 Then open <http://localhost:4173>. The Dockerfile pins the Node base image, runs `npm ci`, builds the static app, and serves the generated `dist/` directory.
+
+## Exact verification commands
+
+From the repository root, these are the complete clean-machine checks:
+
+```bash
+npm ci
+npm test
+npm run build
+npm start
+```
+
+For a container-only build and run:
+
+```bash
+docker build -t grenmon:local .
+docker run --rm -p 4173:4173 grenmon:local
+```
 
 ## Project shape
 
