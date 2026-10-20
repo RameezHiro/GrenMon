@@ -6,6 +6,17 @@
     <meta name="theme-color" content="#112b29" />
     <title>GrenMon — Field Research</title>
     <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .captured-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+      .captured-list li{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:.72rem}
+      .captured-list li:last-child{border-bottom:0}
+      .captured-mark{display:grid;place-items:center;width:34px;height:34px;border:2px solid var(--ink);background:var(--citron);font-size:.7rem;font-weight:900}
+      .captured-mark.ember{background:var(--coral)}.captured-mark.tide{background:#63b9d5}
+      .captured-list strong{display:block;font-family:Georgia,serif;font-size:.92rem}.captured-list small{display:block;margin-top:3px;color:var(--ink-soft);font-size:.58rem;font-weight:900;letter-spacing:.08em}.captured-list em{color:var(--coral);font-size:.58rem;font-style:normal;font-weight:900;letter-spacing:.07em}
+      .scene-root{min-height:0}.scene-root canvas{min-height:0}
+      @media(min-width:1001px){.scene-root{min-height:620px}.scene-caption{min-height:76px}}
+      @media(max-width:1000px){.captured-block{grid-column:1/-1}}
+    </style>
   </head>
   <body>
     <!-- THESIS: GrenMon is a field-research monster RPG where habitats, conditions, and choices matter more than collecting a flat list. OWN-WORLD: low-poly diorama terrain, flat ink silhouettes, paper field notes, citron habitat marks, and coral research warnings. STORY: track a wild specimen, read the field, weaken it with a limited move kit, and earn the right to capture it. FIRST VIEWPORT: a living angled habitat fills the left side while the research column names the active condition, target, and next decision. FORM: low-poly field-research diorama, rebuilt from the original route plate. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
@@ -43,6 +54,11 @@
             <div class="meter-row"><span>VITALS</span><strong id="player-hp">34 / 34</strong></div>
             <div class="meter"><i id="player-hp-meter" style="width:100%"></i></div>
             <p class="evolution-line">NEXT FORM <strong>Bloomlet</strong> <span>branch at LV 09</span></p>
+          </section>
+
+          <section class="research-block captured-block">
+            <div class="block-heading"><h2>Captured log</h2><span id="captured-count">01</span></div>
+            <ul id="captured-list" class="captured-list" aria-live="polite"></ul>
           </section>
 
           <section id="target-block" class="research-block target-block" hidden>

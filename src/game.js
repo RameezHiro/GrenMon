@@ -40,6 +40,8 @@ const moveGrid = document.querySelector('#move-grid');
 const captureButton = document.querySelector('#capture-button');
 const leaveButton = document.querySelector('#leave-button');
 const fieldLog = document.querySelector('#field-log');
+const capturedList = document.querySelector('#captured-list');
+const capturedCount = document.querySelector('#captured-count');
 const toast = document.querySelector('#toast');
 const liveRegion = document.querySelector('#live-region');
 
@@ -56,6 +58,7 @@ const state = {
   playerMesh: null,
   targetMesh: null,
   steps: 0,
+  captured: loadCaptured(),
 };
 
 const scene = new THREE.Scene();
@@ -93,6 +96,28 @@ function showToast(text) { toast.textContent = text; toast.classList.add('visibl
 function setMessage(title, copy) { messageTitle.textContent = title; messageCopy.textContent = copy; }
 function setCondition(condition) { state.condition = condition; const details = CONDITIONS[condition]; conditionLabel.textContent = details.label.toUpperCase(); }
 function updateMeter(element, value, max) { element.style.width = `${Math.max(0, Math.min(100, value / max * 100))}%`; }
+
+function loadCaptured() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('grenmon-captured') || '[]');
+    return ['spriggle', ...stored.filter((id) => id !== 'spriggle' && MONSTERS[id])].filter((id, index, list) => list.indexOf(id) === index);
+  } catch {
+    return ['spriggle'];
+  }
+}
+
+function saveCaptured() {
+  localStorage.setItem('grenmon-captured', JSON.stringify(state.captured.filter((id) => id !== 'spriggle')));
+}
+
+function renderCaptured() {
+  capturedCount.textContent = String(state.captured.length).padStart(2, '0');
+  capturedList.innerHTML = state.captured.map((id) => {
+    const monster = MONSTERS[id];
+    const type = monster.type === 'ember' ? 'ember' : monster.type === 'tide' ? 'tide' : 'leaf';
+    return `<li><span class="captured-mark ${type}">${monster.name.slice(0, 1)}</span><span><strong>${monster.name}</strong><small>${monster.species.toUpperCase()} / ${TYPES[monster.type].label.toUpperCase()}</small></span><em>LV ${String(monster.level).padStart(2, '0')}</em></li>`;
+  }).join('');
+}
 
 function monsterMesh(monster, facing = 1) {
   const group = new THREE.Group();
@@ -178,6 +203,22 @@ function makeGrass(x, z) {
   for (let i = 0; i < 4; i += 1) { const blade = new THREE.Mesh(new THREE.ConeGeometry(.06, .5 + (i % 2) * .18, 3), material(palette.citron)); blade.position.set((i - 1.5) * .14, .25, ((i * 3) % 2) * .12); blade.rotation.z = (i - 1.5) * .22; group.add(blade); } return group;
 }
 function makeMarker(x, z) { const marker = new THREE.Group(); marker.position.set(x, 0, z); marker.add(box(.12, .7, .12, palette.ink, .35)); marker.add(box(.9, .35, .12, palette.coral, .85)); return marker; }
+function makePond(x, z, scale = 1) {
+  const pond = new THREE.Group(); pond.position.set(x, .04, z); pond.scale.setScalar(scale);
+  const water = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 1.65, .08, 8), material(palette.water, .45)); water.scale.z = .7; water.receiveShadow = true; pond.add(water);
+  const bank = new THREE.Mesh(new THREE.TorusGeometry(1.68, .12, 4, 8), material(palette.stone)); bank.rotation.x = Math.PI / 2; bank.scale.z = .7; bank.position.y = -.01; pond.add(bank);
+  return pond;
+}
+function makeRock(x, z, scale = 1) {
+  const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(.42, 0), material(palette.stone)); rock.position.set(x, .35 * scale, z); rock.scale.set(scale, scale * .75, scale * .8); rock.castShadow = true; return rock;
+}
+function makeFlower(x, z, color = palette.coral) {
+  const flower = new THREE.Group(); flower.position.set(x, 0, z); flower.add(box(.05, .42, .05, palette.deepMeadow, .21));
+  const bloom = new THREE.Mesh(new THREE.IcosahedronGeometry(.16, 0), material(color)); bloom.position.y = .52; bloom.castShadow = true; flower.add(bloom); return flower;
+}
+function makeLog(x, z, rotation = 0) {
+  const log = new THREE.Mesh(new THREE.CylinderGeometry(.2, .25, 1.4, 6), material(palette.coral)); log.position.set(x, .25, z); log.rotation.z = Math.PI / 2; log.rotation.y = rotation; log.castShadow = true; return log;
+}
 
 function buildWorld() {
   clearGroup(state.worldGroup); clearGroup(state.battleGroup);
@@ -186,11 +227,15 @@ function buildWorld() {
   const path = new THREE.Mesh(new THREE.BoxGeometry(3.2, .05, HABITAT.height), material(palette.paperLight)); path.position.set(-3.2, .02, 0); group.add(path);
   for (let x = -6; x <= 6; x += 1.5) for (let z = -4; z <= 4; z += 1.5) if (Math.abs(x - HABITAT.grass.x) > 1.5 || Math.abs(z - HABITAT.grass.z) > 1.5) group.add(makeGrass(x, z));
   [[-5, -3, 1.1], [5, -3, 1.2], [5, 3, .9], [-5, 3, 1]].forEach(([x, z, scale]) => group.add(makeTree(x, z, scale)));
+  group.add(makePond(4.4, -2.7, 1.05));
+  [[-1.8, -3.7, .7], [1.5, 3.3, .55], [5.1, .8, .65], [-5.5, .5, .75]].forEach(([x, z, scale]) => group.add(makeRock(x, z, scale)));
+  [[-1.6, -1.2, palette.coral], [-.8, -1.5, palette.citron], [2.3, 1.8, palette.coral], [5.2, -1.1, palette.citron], [-5.2, 1.6, palette.coral]].forEach(([x, z, color]) => group.add(makeFlower(x, z, color)));
+  group.add(makeLog(-.4, 2.8, .22));
   group.add(makeMarker(HABITAT.grass.x, HABITAT.grass.z));
   const shrine = box(1.5, 1.1, .7, palette.stone, .55); shrine.position.set(HABITAT.shrine.x, 0, HABITAT.shrine.z); group.add(shrine);
   const roof = new THREE.Mesh(new THREE.ConeGeometry(1.3, .7, 4), material(palette.coral)); roof.position.set(HABITAT.shrine.x, 1.45, HABITAT.shrine.z); roof.rotation.y = Math.PI / 4; roof.castShadow = true; group.add(roof);
   state.playerMesh = adventurerMesh(); state.playerMesh.position.set(state.playerPosition.x, 0, state.playerPosition.z); group.add(state.playerMesh);
-  camera.position.set(9, 12, 10); camera.lookAt(0, 0, 0); camera.zoom = 1.35; camera.updateProjectionMatrix();
+  camera.position.set(9, 12, 10); camera.lookAt(0, 0, 0); camera.zoom = 1.15; camera.updateProjectionMatrix();
 }
 
 function buildBattle() {
@@ -206,7 +251,7 @@ function buildBattle() {
   camera.position.set(9, 7, 11); camera.lookAt(0, .7, 0); camera.zoom = 1.05; camera.updateProjectionMatrix();
 }
 
-function resize() { const width = root.clientWidth; const height = Math.max(300, Math.min(590, width * .62)); renderer.setSize(width, height, false); if (state.mode === 'world') { camera.left = -8; camera.right = 8; camera.top = 5; camera.bottom = -5; } else { camera.left = -8; camera.right = 8; camera.top = 5; camera.bottom = -5; } camera.updateProjectionMatrix(); }
+function resize() { const width = root.clientWidth; const height = Math.max(340, Math.min(680, width * .68)); renderer.setSize(width, height, false); if (state.mode === 'world') { camera.left = -9; camera.right = 9; camera.top = 5.8; camera.bottom = -5.8; } else { camera.left = -8; camera.right = 8; camera.top = 5; camera.bottom = -5; } camera.updateProjectionMatrix(); }
 function animate() { requestAnimationFrame(animate); if (state.playerMesh) state.playerMesh.rotation.y = Math.sin(performance.now() * .002) * .025; if (state.targetMesh) state.targetMesh.rotation.y = Math.sin(performance.now() * .002 + 1) * .035; renderer.render(scene, camera); }
 
 function updatePlayerUi() { playerName.textContent = state.player.name; playerSpecies.textContent = `${state.player.species.toUpperCase()} / ${TYPES[state.player.type].label.toUpperCase()}`; playerLevel.textContent = String(state.player.level).padStart(2, '0'); playerHp.textContent = `${state.player.hp} / ${state.player.maxHp}`; updateMeter(playerHpMeter, state.player.hp, state.player.maxHp); }
@@ -216,7 +261,7 @@ function showBattleUi() { targetBlock.hidden = false; battleBlock.hidden = false
 function leaveBattle() { state.mode = 'world'; state.target = null; setCondition('clear'); targetBlock.hidden = true; battleBlock.hidden = true; modeLabel.textContent = 'HABITAT / LIVE'; sceneKicker.textContent = 'HABITAT 01 / SUNWAKE MEADOW'; sceneReadout.textContent = 'FIELD OF VIEW 42°'; sceneCaption.innerHTML = '<strong>Track the rustle.</strong><span>Move with WASD or arrow keys. Walk into the marked habitat to find a specimen.</span>'; buildWorld(); resize(); setMessage('The meadow settles.', 'A good field researcher knows when to leave a signal undisturbed.'); }
 function startEncounter() { state.mode = 'battle'; state.target = cloneMonster(MONSTERS[encounterForHabitat(Math.random())]); state.battleLog = [`${state.target.name} entered the marked habitat.`]; setCondition('clear'); buildBattle(); resize(); showBattleUi(); addLog(`${state.target.name} entered the marked habitat.`); }
 function performMove(moveId) { if (!state.target || state.target.hp <= 0) return; const move = MOVES[moveId]; setCondition(move.condition); const result = resolveTurn({ player: state.player, enemy: state.target, moveId, condition: state.condition, roll: Math.random() }); state.player = result.player; state.target = result.enemy; addLog(result.log[0]); if (result.log[1]) addLog(result.log[1]); updatePlayerUi(); updateTargetUi(); if (result.outcome === 'victory') { setMessage(`${state.target.name} is still.`, 'The signal is weakened enough to capture. Deploy a field capsule or leave the habitat.'); showToast('Signal weakened — capture window open.'); } else if (result.outcome === 'defeat') { setMessage('Spriggle needs a rest.', 'The field was too hot. Return to the meadow and try another approach.'); showToast('Your active specimen fainted.'); } else { setMessage(`${state.target.name} is reading the field.`, `${TYPES[state.target.type].label} against ${TYPES[state.player.type].label}. Use the condition markers to find an edge.`); } }
-function captureTarget() { if (!state.target || !canCapture(state.target, state.condition)) return; const chance = captureChance(state.target, state.condition); if (Math.random() <= chance) { const captured = state.target.name; addLog(`${captured} accepted the field capsule.`); showToast(`${captured} joined the field log.`); setMessage(`${captured} is catalogued.`, 'The next evolution branch is now visible in your research notes.'); leaveBattle(); } else { addLog(`${state.target.name} broke the capsule seal.`); setMessage(`${state.target.name} resisted capture.`, 'The signal is still weak enough to try again.'); showToast('Capture failed — keep reading the field.'); } }
+function captureTarget() { if (!state.target || !canCapture(state.target, state.condition)) return; const chance = captureChance(state.target, state.condition); if (Math.random() <= chance) { const captured = state.target.name; if (!state.captured.includes(state.target.id)) { state.captured.push(state.target.id); saveCaptured(); renderCaptured(); } addLog(`${captured} accepted the field capsule.`); showToast(`${captured} joined the field log.`); setMessage(`${captured} is catalogued.`, 'The next evolution branch is now visible in your research notes.'); leaveBattle(); } else { addLog(`${state.target.name} broke the capsule seal.`); setMessage(`${state.target.name} resisted capture.`, 'The signal is still weak enough to try again.'); showToast('Capture failed — keep reading the field.'); } }
 function tryMove(direction) { if (state.mode !== 'world') return; const current = { x: Math.round(state.playerPosition.x + 4), y: Math.round(state.playerPosition.z + 4), facing: state.playerPosition.facing }; const next = movePlayer(['........', '........', '........', '........', '........', '........', '........', '........'], current, direction); state.playerPosition = { ...state.playerPosition, x: next.x - 4, z: next.y - 4, facing: direction }; state.steps += 1; if (state.playerMesh) { state.playerMesh.position.x = state.playerPosition.x; state.playerMesh.position.z = state.playerPosition.z; } if (Math.abs(state.playerPosition.x - HABITAT.grass.x) < 1.2 && Math.abs(state.playerPosition.z - HABITAT.grass.z) < 1.2 && state.steps > 2) startEncounter(); }
 function handleKey(event) { const key = event.key.toLowerCase(); if (state.mode === 'battle') { if (key >= '1' && key <= '4') performMove(PLAYER_MOVES[Number(key) - 1]); else if (key === ' ' && !captureButton.hidden) captureTarget(); else if (key === 'escape') leaveBattle(); return; } const direction = { w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right' }[key]; if (direction) { event.preventDefault(); tryMove(direction); } }
 
@@ -224,4 +269,4 @@ document.addEventListener('keydown', handleKey);
 captureButton.addEventListener('click', captureTarget);
 leaveButton.addEventListener('click', leaveBattle);
 window.addEventListener('resize', resize);
-updatePlayerUi(); buildWorld(); resize(); animate();
+updatePlayerUi(); renderCaptured(); buildWorld(); resize(); animate();

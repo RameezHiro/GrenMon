@@ -1,6 +1,6 @@
 export const HABITAT = {
-  width: 13,
-  height: 9,
+  width: 17,
+  height: 11,
   start: { x: -4, z: 2 },
   grass: { x: 3, z: -2 },
   shrine: { x: -2, z: -3 },
