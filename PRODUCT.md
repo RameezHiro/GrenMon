@@ -30,6 +30,7 @@ The game is played in a desktop browser with a keyboard. Arrow keys or WASD move
 
 - First slice: one angled habitat, movement, tracked encounters, one active monster per side, four moves, six type families, field conditions, weakening, and capture.
 - Battle presentation: a fixed-camera low-poly arena with readable HTML research controls.
+- Player identity: a human field researcher is the exploration avatar; monsters are companions and wild specimens, not the player character.
 - Monster identity: authored silhouettes, type roles, and branching evolution paths.
 - Visual direction: original pixel-art-inspired graphics, creatures, characters, and branding.
 - Visual foundation: semi-2D/3D low-poly diorama; no photorealism or external art dependency.

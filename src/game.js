@@ -124,6 +124,49 @@ function monsterMesh(monster, facing = 1) {
   return group;
 }
 
+function adventurerMesh() {
+  const group = new THREE.Group();
+  const jacket = box(.72, 1.05, .5, palette.blue, .68);
+  jacket.position.z = .03;
+  group.add(jacket);
+  const vest = box(.42, .64, .53, palette.coral, .84);
+  vest.position.z = -.24;
+  group.add(vest);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(.58, .64, .58), material(0xe3ae7d));
+  head.position.set(0, 1.58, -.02);
+  head.castShadow = true;
+  group.add(head);
+  const hair = new THREE.Mesh(new THREE.BoxGeometry(.62, .2, .62), material(palette.ink));
+  hair.position.set(0, 1.9, .01);
+  hair.castShadow = true;
+  group.add(hair);
+  const hat = new THREE.Mesh(new THREE.ConeGeometry(.52, .42, 4), material(palette.coral));
+  hat.position.set(0, 2.25, .02);
+  hat.rotation.y = Math.PI / 4;
+  hat.castShadow = true;
+  group.add(hat);
+  const hatBand = box(.68, .1, .68, palette.ink, 2.16);
+  group.add(hatBand);
+  [-.5, .5].forEach((x) => {
+    const arm = box(.22, .75, .28, palette.blue, .72);
+    arm.position.x = x;
+    arm.rotation.z = x > 0 ? -.14 : .14;
+    group.add(arm);
+  });
+  [-.2, .2].forEach((x) => {
+    const leg = box(.24, .7, .3, palette.ink, .35);
+    leg.position.x = x;
+    group.add(leg);
+  });
+  const backpack = box(.52, .7, .22, palette.coral, .74);
+  backpack.position.set(0, .78, .34);
+  group.add(backpack);
+  const lens = new THREE.Mesh(new THREE.BoxGeometry(.12, .12, .08), material(palette.citron));
+  lens.position.set(.2, 1.58, -.34);
+  group.add(lens);
+  return group;
+}
+
 function clearGroup(group) { if (group) scene.remove(group); }
 function makeTree(x, z, scale = 1) {
   const tree = new THREE.Group(); tree.position.set(x, 0, z); tree.scale.setScalar(scale);
@@ -146,7 +189,7 @@ function buildWorld() {
   group.add(makeMarker(HABITAT.grass.x, HABITAT.grass.z));
   const shrine = box(1.5, 1.1, .7, palette.stone, .55); shrine.position.set(HABITAT.shrine.x, 0, HABITAT.shrine.z); group.add(shrine);
   const roof = new THREE.Mesh(new THREE.ConeGeometry(1.3, .7, 4), material(palette.coral)); roof.position.set(HABITAT.shrine.x, 1.45, HABITAT.shrine.z); roof.rotation.y = Math.PI / 4; roof.castShadow = true; group.add(roof);
-  state.playerMesh = monsterMesh(state.player, 1); state.playerMesh.position.set(state.playerPosition.x, 0, state.playerPosition.z); group.add(state.playerMesh);
+  state.playerMesh = adventurerMesh(); state.playerMesh.position.set(state.playerPosition.x, 0, state.playerPosition.z); group.add(state.playerMesh);
   camera.position.set(9, 12, 10); camera.lookAt(0, 0, 0); camera.zoom = 1.35; camera.updateProjectionMatrix();
 }
 
@@ -154,7 +197,9 @@ function buildBattle() {
   clearGroup(state.worldGroup); clearGroup(state.battleGroup);
   const group = new THREE.Group(); state.battleGroup = group; scene.add(group);
   const floor = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, .25, 8), material(palette.paperLight)); floor.position.y = -.12; floor.receiveShadow = true; group.add(floor);
-  const back = new THREE.Mesh(new THREE.CircleGeometry(7, 8), material(state.condition === 'mist' ? palette.inkSoft : palette.meadow)); back.position.set(0, 3, 3); back.rotation.x = -Math.PI / 2; group.add(back);
+  const backWall = box(11, .7, .35, state.condition === 'mist' ? palette.inkSoft : palette.deepMeadow, .35); backWall.position.set(0, .1, 3.3); group.add(backWall);
+  const arenaStone = new THREE.Mesh(new THREE.DodecahedronGeometry(.7, 0), material(palette.stone)); arenaStone.position.set(-4, .55, 2.5); arenaStone.castShadow = true; group.add(arenaStone);
+  const arenaTree = makeTree(4, 2.6, .75); group.add(arenaTree);
   const ring = new THREE.Mesh(new THREE.TorusGeometry(3.4, .06, 4, 8), material(palette.coral)); ring.rotation.x = Math.PI / 2; ring.position.y = .04; group.add(ring);
   state.targetMesh = monsterMesh(state.target, -1); state.targetMesh.position.set(2.5, 0, -.6); state.targetMesh.scale.setScalar(1.12); group.add(state.targetMesh);
   state.playerMesh = monsterMesh(state.player, 1); state.playerMesh.position.set(-2.5, 0, .8); state.playerMesh.scale.setScalar(1.05); group.add(state.playerMesh);

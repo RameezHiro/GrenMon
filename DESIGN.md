@@ -71,7 +71,7 @@ The layout is deliberately dense but not cramped. The playable diorama owns the 
 **Key Characteristics:**
 - Print-plate framing around the playable map.
 - Square borders and registration offsets used as structural marks, not decoration.
-- Original creatures rendered from local pixel shapes.
+- A human field researcher in the habitat; original creatures reserved for companions and encounters.
 - One authored action moment: the calm habitat flips into a fixed-camera battle arena.
 
 ## Colors
