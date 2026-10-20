@@ -11,10 +11,9 @@ export const TYPES = {
   leaf: { label: 'Leaf', color: '#b7d94c', strongAgainst: ['tide', 'stone'], weakAgainst: ['ember', 'gale'] },
   ember: { label: 'Ember', color: '#f37557', strongAgainst: ['leaf', 'shade'], weakAgainst: ['tide', 'stone'] },
   tide: { label: 'Tide', color: '#63b9d5', strongAgainst: ['ember', 'stone'], weakAgainst: ['leaf', 'spark'] },
-  stone: { label: 'Stone', color: '#c7a873', strongAgainst: ['ember', 'spark'], weakAgainst: ['tide', 'gale'] },
-  gale: { label: 'Gale', color: '#e6c65b', strongAgainst: ['leaf', 'tide'], weakAgainst: ['stone', 'spark'] },
-  shade: { label: 'Shade', color: '#8d7bc2', strongAgainst: ['gale', 'leaf'], weakAgainst: ['ember', 'spark'] },
-  spark: { label: 'Spark', color: '#e6c65b', strongAgainst: ['tide', 'gale'], weakAgainst: ['stone', 'shade'] },
+  stone: { label: 'Stone', color: '#c7a873', strongAgainst: ['ember', 'shade'], weakAgainst: ['tide', 'gale'] },
+  gale: { label: 'Gale', color: '#e6c65b', strongAgainst: ['leaf', 'tide'], weakAgainst: ['stone', 'shade'] },
+  shade: { label: 'Shade', color: '#8d7bc2', strongAgainst: ['gale', 'leaf'], weakAgainst: ['ember', 'stone'] },
 };
 
 export const CONDITIONS = {
