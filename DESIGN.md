@@ -1,6 +1,6 @@
 ---
 name: GrenMon
-description: An original pocket adventure printed like a living field guide.
+description: A low-poly field-research monster RPG printed like a living field guide.
 colors:
   ink: "#152f2c"
   ink-soft: "#3b5751"
@@ -64,15 +64,15 @@ components:
 
 **Creative North Star: "The Living Field Guide"**
 
-GrenMon treats the game screen as a printed route plate: the map is the artifact, the player makes marks through it, and the surrounding copy behaves like an annotated research note. The visual language borrows the physical discipline of a two- or three-ink print run—ink-black structure, paper warmth, citron discoveries, coral registration marks—without borrowing any commercial game's characters or assets.
+GrenMon treats the game screen as a field diorama: the habitat is the artifact, the player reads its signals, and the surrounding copy behaves like an annotated research note. The visual language combines low-poly geometry with the physical discipline of a two- or three-ink print run—ink-black structure, paper warmth, citron discoveries, coral warnings—without borrowing any commercial game's characters or assets.
 
-The layout is deliberately dense but not cramped. The playable map owns the first viewport; the field column carries status, controls, and the current log. Canvas rendering keeps the world tactile and pixel-led, while the surrounding HTML remains readable and keyboard-first.
+The layout is deliberately dense but not cramped. The playable diorama owns the first viewport; the field column carries specimen status, type conditions, move choices, and the current log. Three.js provides depth and lighting while the surrounding HTML remains readable and keyboard-first.
 
 **Key Characteristics:**
 - Print-plate framing around the playable map.
 - Square borders and registration offsets used as structural marks, not decoration.
 - Original creatures rendered from local pixel shapes.
-- One authored action moment: the calm exploration plate flips into a battle specimen plate.
+- One authored action moment: the calm habitat flips into a fixed-camera battle arena.
 
 ## Colors
 
@@ -146,7 +146,7 @@ The system is square and clipped: 0px radii, 1–3px ink borders, and pixel-shap
 - **Internal Padding:** 17–20px for notes, 18px for the game plate, 14–16px for dialogue.
 
 ### Signature Component: Route Plate
-The route plate is a bordered canvas with a tiny metadata header, hand-authored tile map, and live position footer. It is the primary interaction surface and the visual anchor of the product.
+The habitat diorama is a bordered Three.js scene with low-poly terrain, research markers, geometric monsters, and a fixed readable camera. It is the primary interaction surface and the visual anchor of the product.
 
 ### Signature Component: Battle Specimen
 The battle state reuses the same plate but changes the canvas field, creature scale, specimen cards, and recent-log panel. The mode change is explicit in both canvas lettering and the HTML status column.
@@ -162,6 +162,6 @@ The battle state reuses the same plate but changes the canvas field, creature sc
 
 ### Don't:
 - **Don't** add commercial creature names, copied sprites, or remote asset URLs.
-- **Don't** replace the route plate with a generic card dashboard.
+- **Don't** replace the diorama with a generic card dashboard.
 - **Don't** soften the system with pill-shaped controls or decorative glass.
 - **Don't** use color alone to communicate battle state; pair it with labels and live text.

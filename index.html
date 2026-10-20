@@ -3,97 +3,73 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#16332e" />
-    <title>GrenMon — Field Notes</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <meta name="theme-color" content="#112b29" />
+    <title>GrenMon — Field Research</title>
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <!-- THESIS: GrenMon is a complete pocket adventure printed like a living field guide, refusing the generic game dashboard. OWN-WORLD: ink-black map lines, citron and coral registration marks, paper grain, and dense specimen labels. STORY: explore Sunwake Trail, meet Mara, and survive the tall grass long enough to learn what moves there. FIRST VIEWPORT: a large playable map plate sits left, with the route log and controls locked into a narrow right-hand print column; the main action is movement on the map. FORM: risograph field guide, grounded candidate 3, seed 27d69584. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
-    <div class="page-shell">
-      <header class="masthead">
-        <div>
-          <p class="wordmark">GREΝMON <span>FIELD NOTES / 001</span></p>
-          <h1>Sunwake Trail</h1>
+    <!-- THESIS: GrenMon is a field-research monster RPG where habitats, conditions, and choices matter more than collecting a flat list. OWN-WORLD: low-poly diorama terrain, flat ink silhouettes, paper field notes, citron habitat marks, and coral research warnings. STORY: track a wild specimen, read the field, weaken it with a limited move kit, and earn the right to capture it. FIRST VIEWPORT: a living angled habitat fills the left side while the research column names the active condition, target, and next decision. FORM: low-poly field-research diorama, rebuilt from the original route plate. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <p class="wordmark">GREΝMON <span>FIELD RESEARCH / 002</span></p>
+          <h1>Wild signal</h1>
         </div>
-        <div class="edition-mark" aria-label="Original browser game edition">
-          <span>ORIGINAL</span>
-          <strong>01</strong>
-        </div>
+        <div class="session-status"><span class="status-dot"></span><span id="mode-label">HABITAT / LIVE</span><b id="condition-label">CLEAR AIR</b></div>
       </header>
 
-      <main class="game-layout">
-        <section class="game-plate" aria-label="GrenMon game board">
-          <div class="plate-label">PLATE A — ROUTE STUDY</div>
-          <div class="canvas-frame">
-            <canvas id="game-canvas" width="960" height="640" aria-label="Top-down GrenMon adventure map"></canvas>
-            <div id="dialogue-card" class="dialogue-card" hidden>
-              <p id="dialogue-speaker" class="dialogue-speaker">FIELD NOTE</p>
-              <p id="dialogue-text">The trail is quiet.</p>
-              <button id="dialogue-dismiss" class="ink-button" type="button">Continue <span>SPACE</span></button>
-            </div>
-          </div>
-          <div class="plate-footer">
-            <span>MAP SCALE 1 TILE = 1 STEP</span>
-            <span id="mode-label">EXPLORATION / LIVE</span>
-          </div>
+      <main class="research-layout">
+        <section class="scene-panel" aria-label="GrenMon 3D scene">
+          <div class="scene-meta"><span id="scene-kicker">HABITAT 01 / SUNWAKE MEADOW</span><span id="scene-readout">FIELD OF VIEW 42°</span></div>
+          <div id="scene-root" class="scene-root"></div>
+          <div id="scene-caption" class="scene-caption"><strong>Track the rustle.</strong><span>Move with WASD or arrow keys. Walk into the marked habitat to find a specimen.</span></div>
+          <div class="scene-controls"><span><kbd>W A S D</kbd> MOVE</span><span><kbd>SPACE</kbd> INTERACT</span><span><kbd>1–4</kbd> MOVES</span></div>
         </section>
 
-        <aside class="field-column" aria-label="Game notes and controls">
-          <section class="field-intro">
-            <p class="section-label">CURRENT ENTRY</p>
-            <p id="message-log" class="message-log">The trail is waiting. Use the keys to make the first mark.</p>
+        <aside class="research-column" aria-label="Field research controls">
+          <section class="research-note coral-note">
+            <p class="section-label">CURRENT FIELD NOTE</p>
+            <h2 id="message-title">A warm trace is moving through the grass.</h2>
+            <p id="message-copy">Follow the citron markers. A clear habitat favors steady, type-aware choices.</p>
           </section>
 
-          <section class="field-section">
-            <div class="section-heading">
-              <h2>Trail kit</h2>
-              <span>01</span>
+          <section class="research-block specimen-block">
+            <div class="block-heading"><h2>Active specimen</h2><span>01</span></div>
+            <div class="specimen-summary">
+              <div id="player-badge" class="monster-badge leaf-badge"><span></span></div>
+              <div><strong id="player-name">Spriggle</strong><small id="player-species">ROOTLING / LEAF</small></div>
+              <div class="stat-readout"><small>LV</small><strong id="player-level">04</strong></div>
             </div>
-            <div class="control-list">
-              <div><kbd>W A S D</kbd><span>move</span></div>
-              <div><kbd>ARROWS</kbd><span>move</span></div>
-              <div><kbd>SPACE / E</kbd><span>inspect</span></div>
-            </div>
+            <div class="meter-row"><span>VITALS</span><strong id="player-hp">34 / 34</strong></div>
+            <div class="meter"><i id="player-hp-meter" style="width:100%"></i></div>
+            <p class="evolution-line">NEXT FORM <strong>Bloomlet</strong> <span>branch at LV 09</span></p>
           </section>
 
-          <section class="field-section party-section">
-            <div class="section-heading">
-              <h2>Field companion</h2>
-              <span>02</span>
-            </div>
-            <div class="companion-card">
-              <div class="companion-swatch" aria-hidden="true"><span></span></div>
-              <div>
-                <strong>Spriggle</strong>
-                <span>LV 04 / LEAF</span>
-              </div>
-              <div class="hp-readout"><span>HP</span><b id="player-hp">28 / 28</b></div>
-            </div>
+          <section id="target-block" class="research-block target-block" hidden>
+            <div class="block-heading"><h2>Wild signal</h2><span>02</span></div>
+            <div class="target-summary"><div id="target-badge" class="monster-badge ember-badge"><span></span></div><div><strong id="target-name">Embercub</strong><small id="target-species">CINDER CUB / EMBER</small></div></div>
+            <div class="meter-row"><span>VITALS</span><strong id="target-hp">29 / 29</strong></div>
+            <div class="meter target-meter"><i id="target-hp-meter" style="width:100%"></i></div>
+            <div class="capture-state"><span id="capture-label">TRACKED — NOT READY</span><b id="capture-chance">CAPTURE ODDS 18%</b></div>
           </section>
 
-          <section id="battle-actions" class="field-section battle-section" hidden>
-            <div class="section-heading">
-              <h2>Battle choices</h2>
-              <span>03</span>
-            </div>
-            <div class="battle-buttons">
-              <button id="attack-button" class="ink-button primary" type="button">Vine Snap <span>1</span></button>
-              <button id="retreat-button" class="ink-button" type="button">Retreat <span>2</span></button>
-            </div>
-            <p class="battle-note">A clean hit ends the study. If your HP reaches zero, the trail brings you home.</p>
+          <section id="battle-block" class="research-block battle-block" hidden>
+            <div class="block-heading"><h2>Choose a move</h2><span>03</span></div>
+            <div id="move-grid" class="move-grid"></div>
+            <button id="capture-button" class="action-button capture-button" type="button" hidden>Deploy field capsule <span>SPACE</span></button>
+            <button id="leave-button" class="text-button" type="button">Leave encounter <span>ESC</span></button>
           </section>
 
-          <footer class="field-footer">
-            <span>NO EXTERNAL ASSETS</span>
-            <span>BUILD 0.1</span>
-          </footer>
+          <section class="research-block roster-block">
+            <div class="block-heading"><h2>Field log</h2><span>04</span></div>
+            <ul id="field-log" class="field-log"><li>Sunwake Meadow: active.</li><li>Six type families documented.</li><li>Capture requires a weakened signal.</li></ul>
+          </section>
         </aside>
       </main>
 
-      <p id="live-region" class="sr-only" role="status" aria-live="polite"></p>
-      <noscript><p class="noscript">GrenMon needs JavaScript enabled to draw the trail.</p></noscript>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <p class="sr-only" id="live-region" aria-live="polite"></p>
     </div>
-
     <script type="module" src="/src/game.js"></script>
   </body>
 </html>

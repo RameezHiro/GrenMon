@@ -2,79 +2,76 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  CREATURES,
-  INTERACTABLES,
-  MAP,
-  createBattle,
-  findInteractable,
-  getFacingPosition,
-  isWalkable,
+  CONDITIONS,
+  MONSTERS,
+  MOVES,
+  PLAYER_MOVES,
+  calculateDamage,
+  canCapture,
+  captureChance,
+  cloneMonster,
+  encounterForHabitat,
   movePlayer,
   resolveTurn,
-  shouldEncounter,
+  typeMultiplier,
 } from '../src/domain.js';
 
-test('the authored map has a stable rectangular shape and outer walls', () => {
-  assert.equal(MAP.length, 14);
-  assert.equal(MAP[0].length, 20);
-  assert.ok(MAP.every((row) => row.length === 20));
-  assert.ok(MAP.every((row) => row.startsWith('#') && row.endsWith('#')));
-  assert.ok(MAP[0].split('').every((tile) => tile === '#'));
+test('the starter has a focused four-move field loadout', () => {
+  assert.equal(PLAYER_MOVES.length, 4);
+  assert.ok(PLAYER_MOVES.every((id) => MOVES[id]));
 });
 
-test('movement keeps the player on walkable tiles and updates facing on blocked moves', () => {
-  const start = { x: 2, y: 12, facing: 'up' };
-  const moved = movePlayer(MAP, start, 'up');
-  assert.deepEqual(moved, { x: 2, y: 11, facing: 'up' });
-
-  const blocked = movePlayer(MAP, { x: 1, y: 3, facing: 'left' }, 'left');
-  assert.equal(blocked.x, 1);
-  assert.equal(blocked.y, 3);
-  assert.equal(blocked.facing, 'left');
-  assert.equal(isWalkable(MAP, blocked.x, blocked.y), true);
+test('type advantages and disadvantages are explicit and asymmetric', () => {
+  assert.equal(typeMultiplier('leaf', 'tide'), 1.5);
+  assert.equal(typeMultiplier('tide', 'leaf'), 0.65);
+  assert.equal(typeMultiplier('leaf', 'stone'), 1.5);
+  assert.equal(typeMultiplier('stone', 'leaf'), 1);
 });
 
-test('facing and interaction lookup select the tile directly in front of the player', () => {
-  const facing = getFacingPosition({ x: 3, y: 11, facing: 'up' });
-  assert.deepEqual(facing, { x: 3, y: 10, facing: 'up' });
-  assert.equal(findInteractable(INTERACTABLES, facing)?.id, 'mara');
+test('conditions modify damage without replacing type strategy', () => {
+  const attacker = cloneMonster(MONSTERS.spriggle);
+  const defender = cloneMonster(MONSTERS.embercub);
+  const move = MOVES.vineSnap;
+  const clearDamage = calculateDamage({ attacker, defender, move, condition: 'clear', roll: 0.5 });
+  const mistDamage = calculateDamage({ attacker, defender, move, condition: 'mist', roll: 0.5 });
+  assert.ok(clearDamage > mistDamage);
+  assert.equal(CONDITIONS.mist.label, 'Silver mist');
 });
 
-test('encounters only trigger in grass below the encounter threshold', () => {
-  assert.equal(shouldEncounter('g', 0.17), true);
-  assert.equal(shouldEncounter('g', 0.18), false);
-  assert.equal(shouldEncounter('.', 0.01), false);
+test('movement updates the field position and blocks map edges', () => {
+  const openMap = ['........', '........', '........'];
+  const moved = movePlayer(openMap, { x: 2, y: 1, facing: 'up' }, 'right');
+  assert.deepEqual(moved, { x: 3, y: 1, facing: 'right' });
+  const blocked = movePlayer(['###', '#.#', '###'], { x: 1, y: 1, facing: 'up' }, 'up');
+  assert.deepEqual(blocked, { x: 1, y: 1, facing: 'up' });
 });
 
-test('a deterministic battle turn damages both creatures and logs the exchange', () => {
-  const battle = createBattle(
-    { ...CREATURES.spriggle, hp: 28 },
-    { ...CREATURES.embercub, hp: 24 },
-  );
-  const result = resolveTurn(battle, 'vineSnap', 0);
-  assert.equal(result.player.hp, 22);
-  assert.equal(result.enemy.hp, 17);
-  assert.equal(result.outcome, 'active');
-  assert.equal(result.log.length, 2);
+test('habitat encounters select from the local specimen pool', () => {
+  assert.equal(encounterForHabitat(0), 'embercub');
+  assert.equal(encounterForHabitat(0.99), 'tidefin');
 });
 
-test('a finishing attack returns a victory without allowing an enemy counterattack', () => {
-  const battle = createBattle(
-    { ...CREATURES.spriggle, hp: 28 },
-    { ...CREATURES.embercub, hp: 3 },
-  );
-  const result = resolveTurn(battle, 'vineSnap', 0);
-  assert.equal(result.enemy.hp, 0);
-  assert.equal(result.player.hp, 28);
+test('a turn applies damage, records an advantage, and allows capture after weakening', () => {
+  const player = cloneMonster(MONSTERS.spriggle);
+  const enemy = cloneMonster(MONSTERS.tidefin);
+  const result = resolveTurn({ player, enemy, moveId: 'vineSnap', condition: 'clear', roll: 0 });
+  assert.ok(result.damage > 0);
+  assert.equal(result.log.some((line) => line.startsWith('Advantage:')), true);
+  assert.equal(canCapture({ ...enemy, hp: 14 }, 'clear'), true);
+  assert.ok(captureChance({ ...enemy, hp: 14 }, 'clear') > enemy.captureRate);
+});
+
+test('a mist move opens the capture window even before low health', () => {
+  const target = { ...MONSTERS.embercub, hp: MONSTERS.embercub.maxHp };
+  assert.equal(canCapture(target, 'clear'), false);
+  assert.equal(canCapture(target, 'mist'), true);
+});
+
+test('a finishing turn has a stable victory result without a counterattack', () => {
+  const player = cloneMonster(MONSTERS.spriggle);
+  const enemy = { ...cloneMonster(MONSTERS.embercub), hp: 1 };
+  const result = resolveTurn({ player, enemy, moveId: 'vineSnap', condition: 'clear', roll: 0 });
   assert.equal(result.outcome, 'victory');
-});
-
-test('a creature reaching zero HP produces a stable defeat result', () => {
-  const battle = createBattle(
-    { ...CREATURES.spriggle, hp: 4 },
-    { ...CREATURES.embercub, hp: 24 },
-  );
-  const result = resolveTurn(battle, 'vineSnap', 0.999);
-  assert.equal(result.player.hp, 0);
-  assert.equal(result.outcome, 'defeat');
+  assert.equal(result.player.hp, player.hp);
+  assert.equal(result.enemy.hp, 0);
 });

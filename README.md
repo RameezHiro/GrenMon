@@ -1,23 +1,24 @@
 # GrenMon
 
-GrenMon is an original browser RPG vertical slice inspired by the readable, top-down adventure loops of 1990s creature-collecting games. It deliberately uses original creatures, characters, writing, and pixel-art-inspired Canvas drawings rather than proprietary game assets.
+GrenMon is an original browser monster-hunter RPG built around a semi-2D/3D low-poly field-research world. Explore an angled habitat, read conditions, weaken a wild specimen with four limited moves, and capture it when the signal is ready. It deliberately uses original monsters, writing, geometry, and UI rather than proprietary game assets.
 
 ## What is playable
 
-- Explore the hand-authored Sunwake Trail with arrow keys or WASD.
-- Walk around blocked tiles and inspect Mara or the trail marker with `Space` or `E`.
-- Enter bright grass to trigger an encounter with the original creature Embercub.
-- Fight with Spriggle using `Vine Snap`, then return to the trail after victory or defeat.
-- Use the mouse on battle buttons or the keyboard shortcuts `1` and `2`.
+- Explore a low-poly Sunwake Meadow with arrow keys or WASD.
+- Walk into the marked habitat to track an original wild specimen.
+- Fight in a fixed-camera 3D arena with one active monster and four move choices.
+- Use six type families and field conditions such as Clear air, Silver mist, and Charged soil.
+- Weaken the target, then deploy a field capsule to attempt capture.
+- See branching evolution paths in the field notes for Spriggle, Embercub, and Tidefin.
 
-This is the first vertical slice. Saving, inventory, multiple maps, quests, sound, multiplayer, and creature collection are intentionally out of scope until the core loop is solid.
+This is the first vertical slice. Saving, inventory, multiple maps, quests, sound, multiplayer, and long-form progression are intentionally out of scope until the research loop is solid.
 
 ## Requirements
 
 - Node.js `22.14.0` (the version is pinned in `.nvmrc`)
 - npm (bundled with Node.js)
 
-The project has no runtime dependency packages and does not need an API key. `.env.example` is included for future configuration without putting secrets in git.
+Three.js is the only runtime dependency. The app does not need an API key. `.env.example` is included for future configuration without putting secrets in git.
 
 ## Setup
 
@@ -62,7 +63,7 @@ npm run build
 node server.mjs --root dist
 ```
 
-The build copies the self-contained browser app into `dist/`. There is no bundler or remote asset pipeline to make deployment differ from local development.
+The Vite build bundles the Three.js app into `dist/`. All geometry, data, and UI are local; there is no runtime asset or API request.
 
 ## Docker
 
@@ -77,16 +78,17 @@ Then open <http://localhost:4173>. The Dockerfile pins the Node base image, runs
 ## Project shape
 
 ```text
-index.html          Accessible shell and game controls
-styles.css          Risograph-inspired field-guide interface
-src/domain.js       Deterministic game rules and authored map data
-src/game.js         Canvas renderer, input, dialogue, and battle flow
+index.html          Research shell and game controls
+styles.css          Field-guide interface and responsive controls
+src/domain.js       Testable monsters, moves, types, conditions, and battle rules
+src/game.js         Three.js diorama, fixed arena, input, encounters, and capture flow
 test/domain.test.js Offline tests for the game rules
-scripts/build.mjs   Static production build
-server.mjs          Dependency-free local/static server
+test/server.test.js Port-conflict regression test
+vite.config.js      Reproducible Vite configuration
+server.mjs          Optional dependency-free static server for built output
 PRODUCT.md          Durable product scope and constraints
 ```
 
 ## Design direction
 
-The first slice is a risograph field guide: dense ink-black map lines, citron grass, coral registration marks, and paper grain. The map is the primary interaction surface; the right-hand field column explains controls and the active adventure state without hiding the game behind a generic dashboard.
+The rebuilt slice is a low-poly field-research diorama: warm paper UI, deep ink silhouettes, citron habitat markers, coral warnings, simple geometric monsters, and a fixed camera that makes the arena readable. Three-dimensional terrain carries depth while the research column keeps decisions and conditions legible.

@@ -1,479 +1,182 @@
+import * as THREE from 'three';
 import {
-  CREATURES,
-  INTERACTABLES,
-  MAP,
-  PLAYER_START,
-  createBattle,
-  findInteractable,
-  getFacingPosition,
-  getTile,
+  CONDITIONS,
+  HABITAT,
+  MONSTERS,
+  MOVES,
+  PLAYER_MOVES,
+  TYPES,
+  canCapture,
+  captureChance,
+  calculateDamage,
+  cloneMonster,
+  encounterForHabitat,
   movePlayer,
   resolveTurn,
-  shouldEncounter,
 } from './domain.js';
 
-const canvas = document.querySelector('#game-canvas');
-const ctx = canvas.getContext('2d');
-const messageLog = document.querySelector('#message-log');
-const liveRegion = document.querySelector('#live-region');
-const playerHp = document.querySelector('#player-hp');
+const root = document.querySelector('#scene-root');
+const sceneKicker = document.querySelector('#scene-kicker');
+const sceneReadout = document.querySelector('#scene-readout');
+const sceneCaption = document.querySelector('#scene-caption');
 const modeLabel = document.querySelector('#mode-label');
-const dialogueCard = document.querySelector('#dialogue-card');
-const dialogueSpeaker = document.querySelector('#dialogue-speaker');
-const dialogueText = document.querySelector('#dialogue-text');
-const dialogueDismiss = document.querySelector('#dialogue-dismiss');
-const battleActions = document.querySelector('#battle-actions');
-const attackButton = document.querySelector('#attack-button');
-const retreatButton = document.querySelector('#retreat-button');
+const conditionLabel = document.querySelector('#condition-label');
+const messageTitle = document.querySelector('#message-title');
+const messageCopy = document.querySelector('#message-copy');
+const targetBlock = document.querySelector('#target-block');
+const battleBlock = document.querySelector('#battle-block');
+const targetName = document.querySelector('#target-name');
+const targetSpecies = document.querySelector('#target-species');
+const targetHp = document.querySelector('#target-hp');
+const targetHpMeter = document.querySelector('#target-hp-meter');
+const captureLabel = document.querySelector('#capture-label');
+const captureChanceLabel = document.querySelector('#capture-chance');
+const playerHp = document.querySelector('#player-hp');
+const playerHpMeter = document.querySelector('#player-hp-meter');
+const playerLevel = document.querySelector('#player-level');
+const playerName = document.querySelector('#player-name');
+const playerSpecies = document.querySelector('#player-species');
+const moveGrid = document.querySelector('#move-grid');
+const captureButton = document.querySelector('#capture-button');
+const leaveButton = document.querySelector('#leave-button');
+const fieldLog = document.querySelector('#field-log');
+const toast = document.querySelector('#toast');
+const liveRegion = document.querySelector('#live-region');
 
-const TILE = 32;
-const WORLD_X = 48;
-const WORLD_Y = 84;
-const WORLD_WIDTH = MAP[0].length * TILE;
-const WORLD_HEIGHT = MAP.length * TILE;
-const ink = '#152f2c';
-const inkSoft = '#3b5751';
-const paper = '#f3e7c7';
-const paperLight = '#fff6dc';
-const paperDeep = '#e7d4a6';
-const coral = '#ef7258';
-const citron = '#c9dc57';
-const blue = '#416f9f';
-
+const palette = { ink: 0x112b29, inkSoft: 0x47625d, paper: 0xf1e5c5, paperLight: 0xfff6dc, coral: 0xef7157, citron: 0xc8dc58, meadow: 0x9fbeaa, deepMeadow: 0x739a85, water: 0x78b8c8, stone: 0xb9a879 };
 const state = {
   mode: 'world',
-  player: { ...PLAYER_START },
-  playerCreature: { ...CREATURES.spriggle },
-  dialogue: null,
-  encounterCooldown: 3,
-  battle: null,
-  message: 'The trail is waiting. Use the keys to make the first mark.',
-  lastEncounterRoll: null,
+  condition: 'clear',
+  playerPosition: { x: HABITAT.start.x, y: 0, z: HABITAT.start.z, facing: 'up' },
+  player: cloneMonster(MONSTERS.spriggle),
+  target: null,
+  battleLog: [],
+  worldGroup: null,
+  battleGroup: null,
+  playerMesh: null,
+  targetMesh: null,
+  steps: 0,
 };
 
-ctx.imageSmoothingEnabled = false;
-canvas.tabIndex = 0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(palette.meadow);
+const camera = new THREE.OrthographicCamera(-8, 8, 5, -5, 0.1, 100);
+camera.position.set(9, 12, 10);
+camera.lookAt(0, 0, 0);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+root.append(renderer.domElement);
 
-function setMessage(message) {
-  state.message = message;
-  messageLog.textContent = message;
-  liveRegion.textContent = message;
+const hemi = new THREE.HemisphereLight(0xfff3cf, 0x31564d, 2.2);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffe3ae, 3.2);
+sun.position.set(-6, 12, 7);
+sun.castShadow = true;
+scene.add(sun);
+
+function material(color, roughness = 1) { return new THREE.MeshStandardMaterial({ color, roughness, flatShading: true }); }
+function box(width, height, depth, color, y = height / 2) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), material(color));
+  mesh.position.y = y;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
 }
-
-function drawText(text, x, y, size = 14, color = ink, weight = '700', align = 'left') {
-  ctx.fillStyle = color;
-  ctx.font = `${weight} ${size}px "Trebuchet MS", sans-serif`;
-  ctx.textAlign = align;
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText(text, x, y);
+function addLog(text) {
+  state.battleLog.unshift(text);
+  fieldLog.innerHTML = state.battleLog.slice(0, 4).map((line) => `<li>${line}</li>`).join('');
+  liveRegion.textContent = text;
 }
+function showToast(text) { toast.textContent = text; toast.classList.add('visible'); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.remove('visible'), 2600); }
+function setMessage(title, copy) { messageTitle.textContent = title; messageCopy.textContent = copy; }
+function setCondition(condition) { state.condition = condition; const details = CONDITIONS[condition]; conditionLabel.textContent = details.label.toUpperCase(); }
+function updateMeter(element, value, max) { element.style.width = `${Math.max(0, Math.min(100, value / max * 100))}%`; }
 
-function drawPixelRect(x, y, width, height, color) {
-  ctx.fillStyle = color;
-  ctx.fillRect(Math.round(x), Math.round(y), Math.round(width), Math.round(height));
-}
-
-function drawPaperTexture(x, y, width, height, density = 60) {
-  ctx.save();
-  ctx.globalAlpha = 0.13;
-  for (let index = 0; index < density; index += 1) {
-    const dotX = x + ((index * 83) % Math.max(1, width));
-    const dotY = y + ((index * 47) % Math.max(1, height));
-    drawPixelRect(dotX, dotY, index % 3 === 0 ? 2 : 1, 1, ink);
-  }
-  ctx.restore();
-}
-
-function drawPageFrame() {
-  drawPixelRect(0, 0, canvas.width, canvas.height, paper);
-  drawPaperTexture(0, 0, canvas.width, canvas.height, 165);
-  drawPixelRect(20, 22, 660, 580, paperLight);
-  drawPixelRect(20, 22, 660, 580, 'transparent');
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(20, 22, 660, 580);
-  drawPixelRect(32, 38, 8, 8, coral);
-  drawPixelRect(42, 38, 8, 8, citron);
-  drawText('GREΝMON / ROUTE PLATE', 60, 47, 11, ink, '900');
-  drawText('SUNWAKE / 001', 664, 47, 10, coral, '900', 'right');
-}
-
-function tileRect(x, y) {
-  return { x: WORLD_X + x * TILE, y: WORLD_Y + y * TILE };
-}
-
-function drawGrassTile(x, y) {
-  const { x: px, y: py } = tileRect(x, y);
-  drawPixelRect(px, py, TILE, TILE, citron);
-  drawPixelRect(px + 5, py + 23, 3, 6, inkSoft);
-  drawPixelRect(px + 8, py + 18, 3, 11, inkSoft);
-  drawPixelRect(px + 11, py + 13, 3, 16, coral);
-  drawPixelRect(px + 19, py + 21, 3, 8, inkSoft);
-  drawPixelRect(px + 22, py + 16, 3, 13, inkSoft);
-  drawPixelRect(px + 25, py + 12, 2, 17, coral);
-}
-
-function drawPathTile(x, y) {
-  const { x: px, y: py } = tileRect(x, y);
-  const shade = (x + y) % 3 === 0 ? '#eadbb1' : paperDeep;
-  drawPixelRect(px, py, TILE, TILE, shade);
-  if ((x * 5 + y * 3) % 4 === 0) drawPixelRect(px + 7, py + 8, 2, 2, inkSoft);
-  if ((x * 3 + y) % 5 === 0) drawPixelRect(px + 23, py + 23, 2, 2, coral);
-}
-
-function drawWallTile(x, y) {
-  const { x: px, y: py } = tileRect(x, y);
-  drawPixelRect(px, py, TILE, TILE, ink);
-  drawPixelRect(px + 2, py + 3, 5, 2, coral);
-  drawPixelRect(px + 20, py + 8, 4, 2, citron);
-  drawPixelRect(px + 11, py + 25, 7, 2, inkSoft);
-}
-
-function drawSign(x, y) {
-  const { x: px, y: py } = tileRect(x, y);
-  drawPixelRect(px + 14, py + 17, 4, 13, ink);
-  drawPixelRect(px + 5, py + 8, 22, 11, coral);
-  drawPixelRect(px + 7, py + 10, 18, 7, paperLight);
-  drawPixelRect(px + 10, py + 12, 11, 2, ink);
-}
-
-function drawMara(x, y) {
-  const { x: px, y: py } = tileRect(x, y);
-  drawPixelRect(px + 7, py + 25, 18, 4, inkSoft);
-  drawPixelRect(px + 9, py + 6, 14, 11, coral);
-  drawPixelRect(px + 7, py + 9, 18, 8, coral);
-  drawPixelRect(px + 11, py + 13, 10, 8, paperLight);
-  drawPixelRect(px + 9, py + 20, 14, 9, blue);
-  drawPixelRect(px + 6, py + 21, 5, 8, blue);
-  drawPixelRect(px + 21, py + 21, 5, 8, blue);
-  drawPixelRect(px + 12, py + 15, 2, 2, ink);
-  drawPixelRect(px + 19, py + 15, 2, 2, ink);
-}
-
-function drawPlayer(x, y, facing) {
-  const { x: px, y: py } = tileRect(x, y);
-  drawPixelRect(px + 6, py + 26, 20, 3, inkSoft);
-  drawPixelRect(px + 8, py + 7, 16, 13, blue);
-  drawPixelRect(px + 10, py + 3, 12, 7, coral);
-  drawPixelRect(px + 11, py + 13, 10, 8, paperLight);
-  drawPixelRect(px + 9, py + 20, 14, 9, ink);
-  drawPixelRect(px + 7, py + 20, 4, 7, ink);
-  drawPixelRect(px + 21, py + 20, 4, 7, ink);
-  const eyeX = facing === 'left' ? px + 11 : facing === 'right' ? px + 19 : px + 17;
-  drawPixelRect(eyeX, py + 15, 2, 2, ink);
-}
-
-function drawWorld() {
-  drawPageFrame();
-  for (let y = 0; y < MAP.length; y += 1) {
-    for (let x = 0; x < MAP[y].length; x += 1) {
-      const tile = MAP[y][x];
-      if (tile === '#') drawWallTile(x, y);
-      else if (tile === 'g') drawGrassTile(x, y);
-      else drawPathTile(x, y);
-    }
-  }
-
-  drawSign(5, 12);
-  drawMara(3, 10);
-  drawPlayer(state.player.x, state.player.y, state.player.facing);
-
-  drawPixelRect(48, 548, 640, 54, paperLight);
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(48, 548, 640, 54);
-  drawText('LIVE FIELD POSITION', 62, 568, 10, coral, '900');
-  drawText(`${String(state.player.x).padStart(2, '0')} / ${String(state.player.y).padStart(2, '0')}`, 62, 589, 16, ink, '900');
-  drawText('SPACE / E TO INSPECT', 674, 584, 10, inkSoft, '900', 'right');
-}
-
-function drawCreature(creature, x, y, scale = 1, mirrored = false) {
-  ctx.save();
-  if (mirrored) {
-    ctx.translate(x, 0);
-    ctx.scale(-1, 1);
-    x = 0;
-  }
-
-  const px = (offsetX, offsetY, width, height, color) => {
-    drawPixelRect(x + offsetX * scale, y + offsetY * scale, width * scale, height * scale, color);
-  };
-
-  drawPixelRect(x - 48 * scale, y + 48 * scale, 96 * scale, 10 * scale, inkSoft);
-  if (creature.id === 'spriggle') {
-    // Spriggle is a leafy seedling with a broad leaf-tail and little root feet.
-    px(25, -6, 28, 12, ink);
-    px(43, -17, 19, 14, ink);
-    px(52, -28, 12, 14, ink);
-    px(34, -19, 25, 10, citron);
-    px(48, -28, 11, 11, '#e8f1b5');
-    px(-25, -57, 18, 23, ink);
-    px(7, -58, 18, 24, ink);
-    px(-22, -61, 12, 20, citron);
-    px(10, -62, 14, 21, '#e8f1b5');
-    px(-31, -38, 62, 18, ink);
-    px(-37, -22, 74, 35, ink);
-    px(-29, 11, 58, 27, ink);
-    px(-22, 31, 16, 16, ink);
-    px(7, 31, 16, 16, ink);
-    px(-25, -35, 50, 15, creature.color);
-    px(-30, -20, 60, 30, creature.color);
-    px(-22, 9, 44, 25, '#8aa33f');
-    px(-16, 30, 11, 12, '#8aa33f');
-    px(7, 30, 11, 12, '#8aa33f');
-    px(-24, -27, 13, 8, '#e8f1b5');
-    px(11, -27, 13, 8, '#e8f1b5');
-    px(-20, -12, 7, 8, ink);
-    px(13, -12, 7, 8, ink);
-    px(-17, -10, 2, 2, paperLight);
-    px(16, -10, 2, 2, paperLight);
-    px(-8, 3, 16, 4, ink);
-    px(-5, 8, 10, 3, coral);
-    px(-38, -2, 12, 8, coral);
-    px(26, -2, 12, 8, coral);
-    px(-22, 42, 10, 5, ink);
-    px(12, 42, 10, 5, ink);
+function monsterMesh(monster, facing = 1) {
+  const group = new THREE.Group();
+  const body = box(1.3, 1.25, 1, new THREE.Color(monster.color).getHex(), .82);
+  body.scale.x = facing;
+  group.add(body);
+  const belly = box(.86, .55, 1.04, new THREE.Color(monster.accent).getHex(), .63);
+  belly.position.z = -.06;
+  group.add(belly);
+  const head = box(1.45, .82, 1.06, new THREE.Color(monster.color).getHex(), 1.6);
+  head.position.z = -.04;
+  group.add(head);
+  const eyeMaterial = material(palette.ink);
+  [-.34, .34].forEach((x) => { const eye = new THREE.Mesh(new THREE.BoxGeometry(.12, .15, .08), eyeMaterial); eye.position.set(x * facing, 1.72, -.56); group.add(eye); });
+  const earMaterial = material(new THREE.Color(monster.accent).getHex());
+  const earGeometry = monster.id === 'spriggle' ? new THREE.ConeGeometry(.3, .7, 4) : new THREE.ConeGeometry(.34, .75, 4);
+  [-.45, .45].forEach((x) => { const ear = new THREE.Mesh(earGeometry, earMaterial); ear.position.set(x * facing, 2.22, 0); ear.rotation.z = facing * (x > 0 ? -.23 : .23); ear.castShadow = true; group.add(ear); });
+  const footMaterial = material(palette.ink);
+  [-.38, .38].forEach((x) => { const foot = new THREE.Mesh(new THREE.BoxGeometry(.3, .22, .56), footMaterial); foot.position.set(x * facing, .12, -.22); foot.castShadow = true; group.add(foot); });
+  const tail = new THREE.Mesh(new THREE.TorusGeometry(.34, .1, 4, 8, Math.PI * 1.6), material(monster.id === 'spriggle' ? palette.citron : palette.coral));
+  tail.rotation.x = Math.PI / 2; tail.position.set(-.9 * facing, .82, .05); tail.castShadow = true; group.add(tail);
+  if (monster.id === 'spriggle') {
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(.35, .85, 4), material(palette.citron));
+    leaf.position.set(0, 2.75, .02); leaf.rotation.z = .22; leaf.castShadow = true; group.add(leaf);
   } else {
-    // Embercub is a flame-eared cub with a curled ember tail and visible paws.
-    px(27, 10, 22, 12, ink);
-    px(42, 0, 20, 13, ink);
-    px(53, -12, 15, 15, ink);
-    px(57, -24, 10, 15, coral);
-    px(45, 0, 18, 8, coral);
-    px(55, -12, 11, 12, '#fac1b0');
-    px(-25, -57, 18, 28, ink);
-    px(8, -58, 19, 29, ink);
-    px(-21, -61, 10, 24, coral);
-    px(11, -62, 12, 25, '#fac1b0');
-    px(-33, -34, 66, 17, ink);
-    px(-40, -18, 80, 36, ink);
-    px(-33, 15, 66, 27, ink);
-    px(-23, 34, 18, 13, ink);
-    px(6, 34, 18, 13, ink);
-    px(-27, -30, 54, 15, creature.color);
-    px(-34, -14, 68, 29, creature.color);
-    px(-27, 15, 54, 22, '#b84138');
-    px(-17, 18, 34, 17, '#ef7258');
-    px(-24, -23, 15, 8, '#fac1b0');
-    px(9, -23, 15, 8, '#fac1b0');
-    px(-20, -10, 8, 8, paperLight);
-    px(12, -10, 8, 8, paperLight);
-    px(-17, -7, 3, 3, ink);
-    px(15, -7, 3, 3, ink);
-    px(-11, 5, 22, 6, ink);
-    px(-5, 11, 10, 3, '#fac1b0');
-    px(-40, -3, 13, 8, citron);
-    px(27, -3, 13, 8, citron);
-    px(-24, 42, 13, 5, ink);
-    px(11, 42, 13, 5, ink);
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(.28, .65, 5), material(palette.coral));
+    flame.position.set(.78 * facing, 1.35, -.05); flame.rotation.z = -.75 * facing; flame.castShadow = true; group.add(flame);
   }
-  ctx.restore();
+  return group;
 }
 
-function drawBattleCard(x, y, width, creature, isEnemy = false) {
-  drawPixelRect(x, y, width, 70, paperLight);
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x, y, width, 70);
-  drawText(creature.name.toUpperCase(), x + 13, y + 24, 14, ink, '900');
-  drawText(`LV ${String(creature.level).padStart(2, '0')} / ${creature.type.toUpperCase()}`, x + 13, y + 43, 9, coral, '900');
-  drawText(`${creature.hp} / ${creature.maxHp}`, x + width - 12, y + 25, 11, ink, '900', 'right');
-  drawPixelRect(x + 13, y + 52, width - 26, 8, paperDeep);
-  const ratio = creature.maxHp ? creature.hp / creature.maxHp : 0;
-  drawPixelRect(x + 13, y + 52, (width - 26) * ratio, 8, ratio < 0.35 ? coral : citron);
-  if (isEnemy) drawPixelRect(x + width - 21, y + 11, 8, 8, coral);
-  else drawPixelRect(x + width - 21, y + 11, 8, 8, blue);
+function clearGroup(group) { if (group) scene.remove(group); }
+function makeTree(x, z, scale = 1) {
+  const tree = new THREE.Group(); tree.position.set(x, 0, z); tree.scale.setScalar(scale);
+  tree.add(box(.28, 1.2, .28, palette.ink, .6));
+  const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(.95, 0), material(palette.deepMeadow)); crown.position.y = 1.75; crown.castShadow = true; tree.add(crown); return tree;
+}
+function makeGrass(x, z) {
+  const group = new THREE.Group(); group.position.set(x, 0, z);
+  for (let i = 0; i < 4; i += 1) { const blade = new THREE.Mesh(new THREE.ConeGeometry(.06, .5 + (i % 2) * .18, 3), material(palette.citron)); blade.position.set((i - 1.5) * .14, .25, ((i * 3) % 2) * .12); blade.rotation.z = (i - 1.5) * .22; group.add(blade); } return group;
+}
+function makeMarker(x, z) { const marker = new THREE.Group(); marker.position.set(x, 0, z); marker.add(box(.12, .7, .12, palette.ink, .35)); marker.add(box(.9, .35, .12, palette.coral, .85)); return marker; }
+
+function buildWorld() {
+  clearGroup(state.worldGroup); clearGroup(state.battleGroup);
+  const group = new THREE.Group(); state.worldGroup = group; scene.add(group);
+  const ground = new THREE.Mesh(new THREE.BoxGeometry(HABITAT.width, .22, HABITAT.height), material(palette.paperDeep ?? palette.paper)); ground.position.y = -.12; ground.receiveShadow = true; group.add(ground);
+  const path = new THREE.Mesh(new THREE.BoxGeometry(3.2, .05, HABITAT.height), material(palette.paperLight)); path.position.set(-3.2, .02, 0); group.add(path);
+  for (let x = -6; x <= 6; x += 1.5) for (let z = -4; z <= 4; z += 1.5) if (Math.abs(x - HABITAT.grass.x) > 1.5 || Math.abs(z - HABITAT.grass.z) > 1.5) group.add(makeGrass(x, z));
+  [[-5, -3, 1.1], [5, -3, 1.2], [5, 3, .9], [-5, 3, 1]].forEach(([x, z, scale]) => group.add(makeTree(x, z, scale)));
+  group.add(makeMarker(HABITAT.grass.x, HABITAT.grass.z));
+  const shrine = box(1.5, 1.1, .7, palette.stone, .55); shrine.position.set(HABITAT.shrine.x, 0, HABITAT.shrine.z); group.add(shrine);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(1.3, .7, 4), material(palette.coral)); roof.position.set(HABITAT.shrine.x, 1.45, HABITAT.shrine.z); roof.rotation.y = Math.PI / 4; roof.castShadow = true; group.add(roof);
+  state.playerMesh = monsterMesh(state.player, 1); state.playerMesh.position.set(state.playerPosition.x, 0, state.playerPosition.z); group.add(state.playerMesh);
+  camera.position.set(9, 12, 10); camera.lookAt(0, 0, 0); camera.zoom = 1.35; camera.updateProjectionMatrix();
 }
 
-function drawBattle() {
-  drawPageFrame();
-  drawPixelRect(WORLD_X, WORLD_Y, WORLD_WIDTH, WORLD_HEIGHT, '#b8cfae');
-  drawPaperTexture(WORLD_X, WORLD_Y, WORLD_WIDTH, WORLD_HEIGHT, 90);
-  drawPixelRect(WORLD_X, WORLD_Y + 300, WORLD_WIDTH, 148, '#d7df9a');
-  drawPixelRect(WORLD_X + 58, WORLD_Y + 318, 188, 12, citron);
-  drawPixelRect(WORLD_X + 410, WORLD_Y + 170, 152, 12, citron);
-  drawPixelRect(WORLD_X + 82, WORLD_Y + 330, 128, 5, coral);
-  drawPixelRect(WORLD_X + 444, WORLD_Y + 182, 98, 5, coral);
-  drawText('BATTLE / SPECIMEN 02', WORLD_X + 18, WORLD_Y + 24, 11, ink, '900');
-  drawText(state.battle.outcome === 'active' ? 'THE GRASS ANSWERS' : state.battle.outcome.toUpperCase(), WORLD_X + WORLD_WIDTH - 18, WORLD_Y + 24, 11, coral, '900', 'right');
-
-  drawBattleCard(WORLD_X + 372, WORLD_Y + 40, 234, state.battle.enemy, true);
-  drawBattleCard(WORLD_X + 24, WORLD_Y + 352, 234, state.battle.player);
-  drawCreature(state.battle.enemy, WORLD_X + 490, WORLD_Y + 157, 1.25, true);
-  drawCreature(state.battle.player, WORLD_X + 174, WORLD_Y + 296, 1.25);
-
-  drawPixelRect(WORLD_X + 18, WORLD_Y + 408, WORLD_WIDTH - 36, 72, paperLight);
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(WORLD_X + 18, WORLD_Y + 408, WORLD_WIDTH - 36, 72);
-  const recentLogs = state.battle.log.slice(-2);
-  recentLogs.forEach((line, index) => drawText(`› ${line}`, WORLD_X + 32, WORLD_Y + 435 + index * 20, 12, index === 0 ? ink : inkSoft, index === 0 ? '900' : '700'));
+function buildBattle() {
+  clearGroup(state.worldGroup); clearGroup(state.battleGroup);
+  const group = new THREE.Group(); state.battleGroup = group; scene.add(group);
+  const floor = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, .25, 8), material(palette.paperLight)); floor.position.y = -.12; floor.receiveShadow = true; group.add(floor);
+  const back = new THREE.Mesh(new THREE.CircleGeometry(7, 8), material(state.condition === 'mist' ? palette.inkSoft : palette.meadow)); back.position.set(0, 3, 3); back.rotation.x = -Math.PI / 2; group.add(back);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(3.4, .06, 4, 8), material(palette.coral)); ring.rotation.x = Math.PI / 2; ring.position.y = .04; group.add(ring);
+  state.targetMesh = monsterMesh(state.target, -1); state.targetMesh.position.set(2.5, 0, -.6); state.targetMesh.scale.setScalar(1.12); group.add(state.targetMesh);
+  state.playerMesh = monsterMesh(state.player, 1); state.playerMesh.position.set(-2.5, 0, .8); state.playerMesh.scale.setScalar(1.05); group.add(state.playerMesh);
+  camera.position.set(9, 7, 11); camera.lookAt(0, .7, 0); camera.zoom = 1.05; camera.updateProjectionMatrix();
 }
 
-function redraw() {
-  if (state.mode === 'world') drawWorld();
-  else drawBattle();
-}
+function resize() { const width = root.clientWidth; const height = Math.max(300, Math.min(590, width * .62)); renderer.setSize(width, height, false); if (state.mode === 'world') { camera.left = -8; camera.right = 8; camera.top = 5; camera.bottom = -5; } else { camera.left = -8; camera.right = 8; camera.top = 5; camera.bottom = -5; } camera.updateProjectionMatrix(); }
+function animate() { requestAnimationFrame(animate); if (state.playerMesh) state.playerMesh.rotation.y = Math.sin(performance.now() * .002) * .025; if (state.targetMesh) state.targetMesh.rotation.y = Math.sin(performance.now() * .002 + 1) * .035; renderer.render(scene, camera); }
 
-function updateUi() {
-  const hp = state.mode === 'battle' && state.battle ? state.battle.player.hp : state.playerCreature.hp;
-  playerHp.textContent = `${hp} / ${state.playerCreature.maxHp}`;
-  modeLabel.textContent = state.mode === 'battle' ? 'BATTLE / LIVE' : 'EXPLORATION / LIVE';
-  battleActions.hidden = state.mode !== 'battle';
-  if (state.mode === 'battle' && state.battle) {
-    const finished = state.battle.outcome !== 'active';
-    attackButton.textContent = finished ? 'Return to Trail' : 'Vine Snap';
-    attackButton.innerHTML = `${finished ? 'Return to Trail' : 'Vine Snap'} <span>${finished ? 'SPACE' : '1'}</span>`;
-    retreatButton.innerHTML = `Retreat <span>2</span>`;
-    const note = document.querySelector('.battle-note');
-    note.textContent = finished
-      ? state.battle.outcome === 'victory' ? 'The field note is complete. Return when you are ready.' : 'The trail carried you home. Your companion is resting.'
-      : 'A clean hit ends the study. If your HP reaches zero, the trail brings you home.';
-  }
-}
+function updatePlayerUi() { playerName.textContent = state.player.name; playerSpecies.textContent = `${state.player.species.toUpperCase()} / ${TYPES[state.player.type].label.toUpperCase()}`; playerLevel.textContent = String(state.player.level).padStart(2, '0'); playerHp.textContent = `${state.player.hp} / ${state.player.maxHp}`; updateMeter(playerHpMeter, state.player.hp, state.player.maxHp); }
+function updateTargetUi() { if (!state.target) return; targetName.textContent = state.target.name; targetSpecies.textContent = `${state.target.species.toUpperCase()} / ${TYPES[state.target.type].label.toUpperCase()}`; targetHp.textContent = `${state.target.hp} / ${state.target.maxHp}`; updateMeter(targetHpMeter, state.target.hp, state.target.maxHp); const ready = canCapture(state.target, state.condition); captureLabel.textContent = ready ? 'SIGNAL WEAKENED — READY' : 'TRACKED — NOT READY'; captureChanceLabel.textContent = `CAPTURE ODDS ${Math.round(captureChance(state.target, state.condition) * 100)}%`; captureButton.hidden = !ready; }
+function renderMoves() { moveGrid.innerHTML = PLAYER_MOVES.map((id, index) => { const move = MOVES[id]; return `<button class="move-button" data-move="${id}" type="button"><strong>${index + 1}. ${move.name}</strong><small>${TYPES[move.type].label.toUpperCase()} / ${move.power} PWR</small><em>${move.description}</em></button>`; }).join(''); moveGrid.querySelectorAll('[data-move]').forEach((button) => button.addEventListener('click', () => performMove(button.dataset.move))); }
+function showBattleUi() { targetBlock.hidden = false; battleBlock.hidden = false; modeLabel.textContent = 'ENCOUNTER / LIVE'; sceneKicker.textContent = 'ENCOUNTER 01 / SPECIMEN PROTOCOL'; sceneReadout.textContent = 'FIXED ARENA / 3D'; setMessage(`Wild ${state.target.name} detected.`, 'Read its type, choose a move, and weaken the signal before deploying a field capsule.'); renderMoves(); updateTargetUi(); }
+function leaveBattle() { state.mode = 'world'; state.target = null; setCondition('clear'); targetBlock.hidden = true; battleBlock.hidden = true; modeLabel.textContent = 'HABITAT / LIVE'; sceneKicker.textContent = 'HABITAT 01 / SUNWAKE MEADOW'; sceneReadout.textContent = 'FIELD OF VIEW 42°'; sceneCaption.innerHTML = '<strong>Track the rustle.</strong><span>Move with WASD or arrow keys. Walk into the marked habitat to find a specimen.</span>'; buildWorld(); resize(); setMessage('The meadow settles.', 'A good field researcher knows when to leave a signal undisturbed.'); }
+function startEncounter() { state.mode = 'battle'; state.target = cloneMonster(MONSTERS[encounterForHabitat(Math.random())]); state.battleLog = [`${state.target.name} entered the marked habitat.`]; setCondition('clear'); buildBattle(); resize(); showBattleUi(); addLog(`${state.target.name} entered the marked habitat.`); }
+function performMove(moveId) { if (!state.target || state.target.hp <= 0) return; const move = MOVES[moveId]; setCondition(move.condition); const result = resolveTurn({ player: state.player, enemy: state.target, moveId, condition: state.condition, roll: Math.random() }); state.player = result.player; state.target = result.enemy; addLog(result.log[0]); if (result.log[1]) addLog(result.log[1]); updatePlayerUi(); updateTargetUi(); if (result.outcome === 'victory') { setMessage(`${state.target.name} is still.`, 'The signal is weakened enough to capture. Deploy a field capsule or leave the habitat.'); showToast('Signal weakened — capture window open.'); } else if (result.outcome === 'defeat') { setMessage('Spriggle needs a rest.', 'The field was too hot. Return to the meadow and try another approach.'); showToast('Your active specimen fainted.'); } else { setMessage(`${state.target.name} is reading the field.`, `${TYPES[state.target.type].label} against ${TYPES[state.player.type].label}. Use the condition markers to find an edge.`); } }
+function captureTarget() { if (!state.target || !canCapture(state.target, state.condition)) return; const chance = captureChance(state.target, state.condition); if (Math.random() <= chance) { const captured = state.target.name; addLog(`${captured} accepted the field capsule.`); showToast(`${captured} joined the field log.`); setMessage(`${captured} is catalogued.`, 'The next evolution branch is now visible in your research notes.'); leaveBattle(); } else { addLog(`${state.target.name} broke the capsule seal.`); setMessage(`${state.target.name} resisted capture.`, 'The signal is still weak enough to try again.'); showToast('Capture failed — keep reading the field.'); } }
+function tryMove(direction) { if (state.mode !== 'world') return; const current = { x: Math.round(state.playerPosition.x + 4), y: Math.round(state.playerPosition.z + 4), facing: state.playerPosition.facing }; const next = movePlayer(['........', '........', '........', '........', '........', '........', '........', '........'], current, direction); state.playerPosition = { ...state.playerPosition, x: next.x - 4, z: next.y - 4, facing: direction }; state.steps += 1; if (state.playerMesh) { state.playerMesh.position.x = state.playerPosition.x; state.playerMesh.position.z = state.playerPosition.z; } if (Math.abs(state.playerPosition.x - HABITAT.grass.x) < 1.2 && Math.abs(state.playerPosition.z - HABITAT.grass.z) < 1.2 && state.steps > 2) startEncounter(); }
+function handleKey(event) { const key = event.key.toLowerCase(); if (state.mode === 'battle') { if (key >= '1' && key <= '4') performMove(PLAYER_MOVES[Number(key) - 1]); else if (key === ' ' && !captureButton.hidden) captureTarget(); else if (key === 'escape') leaveBattle(); return; } const direction = { w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right' }[key]; if (direction) { event.preventDefault(); tryMove(direction); } }
 
-function openDialogue(target) {
-  state.dialogue = { target, index: 0 };
-  dialogueSpeaker.textContent = target.speaker;
-  dialogueText.textContent = target.lines[0];
-  dialogueCard.hidden = false;
-  setMessage(`${target.speaker}: ${target.lines[0]}`);
-  redraw();
-}
-
-function advanceDialogue() {
-  if (!state.dialogue) return;
-  const nextIndex = state.dialogue.index + 1;
-  if (nextIndex >= state.dialogue.target.lines.length) {
-    state.dialogue = null;
-    dialogueCard.hidden = true;
-    setMessage('The note is filed. The trail is yours again.');
-  } else {
-    state.dialogue.index = nextIndex;
-    const line = state.dialogue.target.lines[nextIndex];
-    dialogueText.textContent = line;
-    setMessage(`${state.dialogue.target.speaker}: ${line}`);
-  }
-  redraw();
-}
-
-function tryInteract() {
-  const facing = getFacingPosition(state.player);
-  const target = findInteractable(INTERACTABLES, facing);
-  if (!target) {
-    setMessage('Only paper, stone, and tall grass answer that way.');
-    redraw();
-    return;
-  }
-  openDialogue(target);
-}
-
-function enterBattle() {
-  state.mode = 'battle';
-  state.battle = createBattle(state.playerCreature, CREATURES.embercub);
-  state.lastEncounterRoll = null;
-  setMessage('A wild Embercub stepped from the grass. Choose a move.');
-  updateUi();
-  redraw();
-}
-
-function returnToTrail(message = 'The trail is quiet again.') {
-  state.mode = 'world';
-  state.battle = null;
-  state.playerCreature.hp = state.playerCreature.maxHp;
-  state.encounterCooldown = 5;
-  setMessage(message);
-  updateUi();
-  redraw();
-  canvas.focus();
-}
-
-function performAttack() {
-  if (!state.battle) return;
-  if (state.battle.outcome !== 'active') {
-    returnToTrail(state.battle.outcome === 'victory' ? 'Victory filed. The grass remembers your name.' : 'The trail brought you home. Spriggle is ready when you are.');
-    return;
-  }
-  state.battle = resolveTurn(state.battle, 'vineSnap', Math.random());
-  setMessage(state.battle.log[state.battle.log.length - 1]);
-  updateUi();
-  redraw();
-}
-
-function retreat() {
-  returnToTrail('You stepped away from the tall grass. Curiosity can wait.');
-}
-
-function move(direction) {
-  const next = movePlayer(MAP, state.player, direction);
-  const moved = next.x !== state.player.x || next.y !== state.player.y;
-  state.player = next;
-  if (!moved) {
-    setMessage('A dark ink wall blocks the route. Try another line.');
-    redraw();
-    return;
-  }
-
-  state.encounterCooldown = Math.max(0, state.encounterCooldown - 1);
-  const tile = getTile(MAP, state.player.x, state.player.y);
-  if (tile === 'g') {
-    if (state.encounterCooldown === 0) {
-      const roll = Math.random();
-      state.lastEncounterRoll = roll;
-      if (shouldEncounter(tile, roll, 0.22)) {
-        enterBattle();
-        return;
-      }
-    }
-    setMessage('The bright grass shivers under your next step.');
-  } else {
-    setMessage('A new tile, a new mark.');
-  }
-  redraw();
-}
-
-function handleKeyDown(event) {
-  const key = event.key.toLowerCase();
-  if (state.dialogue) {
-    if (key === ' ' || key === 'enter' || key === 'e') {
-      event.preventDefault();
-      advanceDialogue();
-    }
-    return;
-  }
-
-  if (state.mode === 'battle') {
-    if (key === '1' || key === ' ') {
-      event.preventDefault();
-      performAttack();
-    } else if (key === '2' || key === 'escape') {
-      event.preventDefault();
-      retreat();
-    }
-    return;
-  }
-
-  const directions = {
-    w: 'up', arrowup: 'up',
-    s: 'down', arrowdown: 'down',
-    a: 'left', arrowleft: 'left',
-    d: 'right', arrowright: 'right',
-  };
-  if (directions[key]) {
-    event.preventDefault();
-    move(directions[key]);
-  } else if (key === ' ' || key === 'e') {
-    event.preventDefault();
-    tryInteract();
-  }
-}
-
-dialogueDismiss.addEventListener('click', advanceDialogue);
-attackButton.addEventListener('click', performAttack);
-retreatButton.addEventListener('click', retreat);
-window.addEventListener('keydown', handleKeyDown);
-canvas.addEventListener('click', () => canvas.focus());
-
-updateUi();
-redraw();
-canvas.focus();
+document.addEventListener('keydown', handleKey);
+captureButton.addEventListener('click', captureTarget);
+leaveButton.addEventListener('click', leaveBattle);
+window.addEventListener('resize', resize);
+updatePlayerUi(); buildWorld(); resize(); animate();

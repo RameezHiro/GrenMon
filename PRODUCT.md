@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-delegated: a dependency-light HTML/CSS/JavaScript Canvas app served by Node.js. This keeps the first slice portable, offline-testable, and easy to rebuild on a clean machine.
+delegated: a Vite-built Three.js browser app with pure JavaScript domain rules. Three.js owns the 2.5D diorama and fixed-camera arena; the domain module remains independent and offline-testable.
 
 ## Users
 
@@ -16,22 +16,25 @@ Players who enjoy compact, nostalgic, top-down creature-collecting RPGs in a bro
 
 ## Product Purpose
 
-GrenMon is an original browser RPG vertical slice. A player explores a small route, talks to a local character, discovers a creature encounter in tall grass, and completes a short turn-based battle.
+GrenMon is an original browser monster-hunter RPG. A player reads a habitat, tracks a wild specimen, weakens it with a limited move kit, and captures it when the field conditions are favorable.
 
 ## Positioning
 
-The first slice puts a complete adventure loop in one small map with original creatures and a hand-authored retro interface, rather than presenting disconnected demos or relying on external art and services.
+The first slice puts a complete research loop in one low-poly habitat with original creatures, branching evolution data, type advantages, field conditions, and a fixed-camera 3D battle arena rather than presenting disconnected demos.
 
 ## Operating Context
 
-The game is played in a desktop browser with a keyboard. Arrow keys or WASD move the player; Space or E interacts; battle choices are selected with the mouse or keyboard. All game data and artwork are local to the repository.
+The game is played in a desktop browser with a keyboard. Arrow keys or WASD move through the angled habitat; number keys 1–4 select moves; Space deploys a capture capsule when the signal is weakened; Escape leaves an encounter. All game data, geometry, and artwork are local to the repository.
 
 ## Capabilities and Constraints
 
-- First slice: one town/route map, movement, collision, one NPC interaction, tall-grass encounters, and one turn-based battle.
+- First slice: one angled habitat, movement, tracked encounters, one active monster per side, four moves, six type families, field conditions, weakening, and capture.
+- Battle presentation: a fixed-camera low-poly arena with readable HTML research controls.
+- Monster identity: authored silhouettes, type roles, and branching evolution paths.
 - Visual direction: original pixel-art-inspired graphics, creatures, characters, and branding.
+- Visual foundation: semi-2D/3D low-poly diorama; no photorealism or external art dependency.
 - No Pokémon names, art, sprites, music, or other proprietary assets are used.
-- No multiplayer, remote API, account system, shop, quest log, or inventory is in this slice.
+- No multiplayer, remote API, account system, shop, quest log, or persistent inventory is in this slice.
 - Save files are deliberately deferred until the core loop is stable.
 
 ## Brand Commitments
