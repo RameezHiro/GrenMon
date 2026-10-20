@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#112b29" />
     <title>GrenMon — Field Research</title>
     <link rel="stylesheet" href="./styles.css" />
@@ -32,10 +32,17 @@
       <main class="research-layout">
         <section class="scene-panel" aria-label="GrenMon 3D scene">
           <div class="scene-meta"><span id="scene-kicker">HABITAT 01 / SUNWAKE MEADOW</span><span id="scene-readout">FIELD OF VIEW 42°</span></div>
-          <div id="scene-root" class="scene-root"></div>
-          <div id="scene-caption" class="scene-caption"><strong>Track the rustle.</strong><span>Move with WASD or arrow keys. Walk into the marked habitat to find a specimen.</span></div>
-          <div class="scene-controls"><span><kbd>W A S D</kbd> MOVE</span><span><kbd>SPACE</kbd> INTERACT</span><span><kbd>1–4</kbd> MOVES</span></div>
-        </section>
+           <div id="scene-root" class="scene-root"></div>
+           <div id="scene-caption" class="scene-caption"><strong>Track the rustle.</strong><span>Move with WASD or arrow keys. Walk into the marked habitat to find a specimen.</span></div>
+           <div class="scene-controls"><span><kbd>W A S D</kbd> MOVE</span><span><kbd>SPACE</kbd> INTERACT</span><span><kbd>1–4</kbd> MOVES</span></div>
+           <div class="touch-controls" aria-label="Touch movement controls">
+             <button type="button" data-direction="up" aria-label="Move up"><span class="touch-arrow touch-arrow-up" aria-hidden="true"></span><span class="sr-only">Up</span></button>
+             <button type="button" data-direction="left" aria-label="Move left"><span class="touch-arrow touch-arrow-left" aria-hidden="true"></span><span class="sr-only">Left</span></button>
+             <span class="touch-controls-center" aria-hidden="true">MOVE</span>
+             <button type="button" data-direction="right" aria-label="Move right"><span class="touch-arrow touch-arrow-right" aria-hidden="true"></span><span class="sr-only">Right</span></button>
+             <button type="button" data-direction="down" aria-label="Move down"><span class="touch-arrow touch-arrow-down" aria-hidden="true"></span><span class="sr-only">Down</span></button>
+           </div>
+         </section>
 
         <aside class="research-column" aria-label="Field research controls">
           <section class="research-note coral-note">

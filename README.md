@@ -4,7 +4,7 @@ GrenMon is an original browser monster-hunter RPG built around a semi-2D/3D low-
 
 ## What is playable
 
-- Explore a low-poly Sunwake Meadow with arrow keys or WASD.
+- Explore a low-poly Sunwake Meadow with arrow keys, WASD, or the on-screen touch pad on mobile.
 - Walk into the marked habitat to track an original wild specimen.
 - Fight in a fixed-camera 3D arena with one active monster and four move choices.
 - Use six type families and field conditions such as Clear air, Silver mist, and Charged soil.

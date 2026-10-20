@@ -42,6 +42,7 @@ const leaveButton = document.querySelector('#leave-button');
 const fieldLog = document.querySelector('#field-log');
 const capturedList = document.querySelector('#captured-list');
 const capturedCount = document.querySelector('#captured-count');
+const touchControls = document.querySelector('.touch-controls');
 const toast = document.querySelector('#toast');
 const liveRegion = document.querySelector('#live-region');
 
@@ -251,7 +252,7 @@ function buildBattle() {
   camera.position.set(9, 7, 11); camera.lookAt(0, .7, 0); camera.zoom = 1.05; camera.updateProjectionMatrix();
 }
 
-function resize() { const width = root.clientWidth; const height = Math.max(340, Math.min(680, width * .68)); renderer.setSize(width, height, false); if (state.mode === 'world') { camera.left = -9; camera.right = 9; camera.top = 5.8; camera.bottom = -5.8; } else { camera.left = -8; camera.right = 8; camera.top = 5; camera.bottom = -5; } camera.updateProjectionMatrix(); }
+function resize() { const width = root.clientWidth; const height = Math.max(280, root.clientHeight || Math.min(680, width * .68)); renderer.setSize(width, height, false); if (state.mode === 'world') { camera.left = -9; camera.right = 9; camera.top = 5.8; camera.bottom = -5.8; } else { camera.left = -8; camera.right = 8; camera.top = 5; camera.bottom = -5; } camera.updateProjectionMatrix(); }
 function animate() { requestAnimationFrame(animate); if (state.playerMesh) state.playerMesh.rotation.y = Math.sin(performance.now() * .002) * .025; if (state.targetMesh) state.targetMesh.rotation.y = Math.sin(performance.now() * .002 + 1) * .035; renderer.render(scene, camera); }
 
 function updatePlayerUi() { playerName.textContent = state.player.name; playerSpecies.textContent = `${state.player.species.toUpperCase()} / ${TYPES[state.player.type].label.toUpperCase()}`; playerLevel.textContent = String(state.player.level).padStart(2, '0'); playerHp.textContent = `${state.player.hp} / ${state.player.maxHp}`; updateMeter(playerHpMeter, state.player.hp, state.player.maxHp); }
@@ -266,6 +267,7 @@ function tryMove(direction) { if (state.mode !== 'world') return; const current 
 function handleKey(event) { const key = event.key.toLowerCase(); if (state.mode === 'battle') { if (key >= '1' && key <= '4') performMove(PLAYER_MOVES[Number(key) - 1]); else if (key === ' ' && !captureButton.hidden) captureTarget(); else if (key === 'escape') leaveBattle(); return; } const direction = { w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right' }[key]; if (direction) { event.preventDefault(); tryMove(direction); } }
 
 document.addEventListener('keydown', handleKey);
+touchControls.querySelectorAll('[data-direction]').forEach((button) => button.addEventListener('pointerdown', (event) => { event.preventDefault(); tryMove(button.dataset.direction); }));
 captureButton.addEventListener('click', captureTarget);
 leaveButton.addEventListener('click', leaveBattle);
 window.addEventListener('resize', resize);
