@@ -3,6 +3,13 @@ export const HABITAT = {
   height: 11,
   start: { x: -4, z: 2 },
   grass: { x: 3, z: -2 },
+  grassPatches: [
+    { x: 3, z: -2 },
+    { x: 5, z: -1 },
+    { x: 1, z: -3 },
+    { x: 4, z: 1 },
+    { x: -1, z: 1 },
+  ],
   shrine: { x: -2, z: -3 },
   camp: { x: -4, z: 2 },
 };
