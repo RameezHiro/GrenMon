@@ -150,6 +150,31 @@ function monsterMesh(monster, facing = 1) {
   return group;
 }
 
+function addBattleHealthBar(group, color) {
+  const bar = new THREE.Group();
+  bar.position.set(0, 3.45, -.28);
+  const track = box(2.5, .18, .1, palette.ink, .09);
+  const fill = box(2.22, .1, .12, color, .08);
+  fill.position.x = -.04;
+  bar.add(track, fill);
+  group.add(bar);
+  group.userData.healthFill = fill;
+  group.userData.healthWidth = 2.22;
+}
+
+function updateHealthBar(group, current, maximum) {
+  if (!group?.userData.healthFill) return;
+  const ratio = Math.max(0, Math.min(1, current / maximum));
+  const fill = group.userData.healthFill;
+  fill.scale.x = ratio;
+  fill.position.x = -(group.userData.healthWidth / 2) * (1 - ratio);
+}
+
+function updateBattleHealthBars() {
+  updateHealthBar(state.playerMesh, state.player.hp, state.player.maxHp);
+  updateHealthBar(state.targetMesh, state.target?.hp || 0, state.target?.maxHp || 1);
+}
+
 function adventurerMesh() {
   const group = new THREE.Group();
   const jacket = box(.72, 1.05, .5, palette.blue, .68);
@@ -247,8 +272,9 @@ function buildBattle() {
   const arenaStone = new THREE.Mesh(new THREE.DodecahedronGeometry(.7, 0), material(palette.stone)); arenaStone.position.set(-4, .55, 2.5); arenaStone.castShadow = true; group.add(arenaStone);
   const arenaTree = makeTree(4, 2.6, .75); group.add(arenaTree);
   const ring = new THREE.Mesh(new THREE.TorusGeometry(3.4, .06, 4, 8), material(palette.coral)); ring.rotation.x = Math.PI / 2; ring.position.y = .04; group.add(ring);
-  state.targetMesh = monsterMesh(state.target, -1); state.targetMesh.position.set(2.5, 0, -.6); state.targetMesh.scale.setScalar(1.12); group.add(state.targetMesh);
-  state.playerMesh = monsterMesh(state.player, 1); state.playerMesh.position.set(-2.5, 0, .8); state.playerMesh.scale.setScalar(1.05); group.add(state.playerMesh);
+  state.targetMesh = monsterMesh(state.target, -1); addBattleHealthBar(state.targetMesh, palette.coral); state.targetMesh.position.set(2.5, 0, -.6); state.targetMesh.scale.setScalar(1.12); group.add(state.targetMesh);
+  state.playerMesh = monsterMesh(state.player, 1); addBattleHealthBar(state.playerMesh, palette.citron); state.playerMesh.position.set(-2.5, 0, .8); state.playerMesh.scale.setScalar(1.05); group.add(state.playerMesh);
+  updateBattleHealthBars();
   camera.position.set(9, 7, 11); camera.lookAt(0, .7, 0); camera.zoom = 1.05; camera.updateProjectionMatrix();
 }
 
@@ -261,7 +287,7 @@ function renderMoves() { moveGrid.innerHTML = PLAYER_MOVES.map((id, index) => { 
 function showBattleUi() { targetBlock.hidden = false; battleBlock.hidden = false; document.body.classList.add('battle-active'); modeLabel.textContent = 'ENCOUNTER / LIVE'; sceneKicker.textContent = 'ENCOUNTER 01 / SPECIMEN PROTOCOL'; sceneReadout.textContent = 'FIXED ARENA / 3D'; setMessage(`Wild ${state.target.name} detected.`, 'Read its type, choose a move, and weaken the signal before deploying a field capsule.'); renderMoves(); updateTargetUi(); }
 function leaveBattle() { state.mode = 'world'; state.target = null; document.body.classList.remove('battle-active'); setCondition('clear'); targetBlock.hidden = true; battleBlock.hidden = true; modeLabel.textContent = 'HABITAT / LIVE'; sceneKicker.textContent = 'HABITAT 01 / SUNWAKE MEADOW'; sceneReadout.textContent = 'FIELD OF VIEW 42°'; sceneCaption.innerHTML = '<strong>Track the rustle.</strong><span>Move with WASD or arrow keys. Walk into the marked habitat to find a specimen.</span>'; buildWorld(); resize(); setMessage('The meadow settles.', 'A good field researcher knows when to leave a signal undisturbed.'); }
 function startEncounter() { state.mode = 'battle'; state.target = cloneMonster(MONSTERS[encounterForHabitat(Math.random())]); state.battleLog = [`${state.target.name} entered the marked habitat.`]; setCondition('clear'); buildBattle(); resize(); showBattleUi(); addLog(`${state.target.name} entered the marked habitat.`); }
-function performMove(moveId) { if (!state.target || state.target.hp <= 0) return; const move = MOVES[moveId]; setCondition(move.condition); const result = resolveTurn({ player: state.player, enemy: state.target, moveId, condition: state.condition, roll: Math.random() }); state.player = result.player; state.target = result.enemy; addLog(result.log[0]); if (result.log[1]) addLog(result.log[1]); updatePlayerUi(); updateTargetUi(); if (result.outcome === 'victory') { setMessage(`${state.target.name} is still.`, 'The signal is weakened enough to capture. Deploy a field capsule or leave the habitat.'); showToast('Signal weakened — capture window open.'); } else if (result.outcome === 'defeat') { setMessage('Spriggle needs a rest.', 'The field was too hot. Return to the meadow and try another approach.'); showToast('Your active specimen fainted.'); } else { setMessage(`${state.target.name} is reading the field.`, `${TYPES[state.target.type].label} against ${TYPES[state.player.type].label}. Use the condition markers to find an edge.`); } }
+function performMove(moveId) { if (!state.target || state.target.hp <= 0) return; const move = MOVES[moveId]; setCondition(move.condition); const result = resolveTurn({ player: state.player, enemy: state.target, moveId, condition: state.condition, roll: Math.random() }); state.player = result.player; state.target = result.enemy; addLog(result.log[0]); if (result.log[1]) addLog(result.log[1]); updatePlayerUi(); updateTargetUi(); updateBattleHealthBars(); if (result.outcome === 'victory') { setMessage(`${state.target.name} is still.`, 'The signal is weakened enough to capture. Deploy a field capsule or leave the habitat.'); showToast('Signal weakened — capture window open.'); } else if (result.outcome === 'defeat') { setMessage('Spriggle needs a rest.', 'The field was too hot. Return to the meadow and try another approach.'); showToast('Your active specimen fainted.'); } else { setMessage(`${state.target.name} is reading the field.`, `${TYPES[state.target.type].label} against ${TYPES[state.player.type].label}. Use the condition markers to find an edge.`); } }
 function captureTarget() { if (!state.target || !canCapture(state.target, state.condition)) return; const chance = captureChance(state.target, state.condition); if (Math.random() <= chance) { const captured = state.target.name; if (!state.captured.includes(state.target.id)) { state.captured.push(state.target.id); saveCaptured(); renderCaptured(); } addLog(`${captured} accepted the field capsule.`); showToast(`${captured} joined the field log.`); setMessage(`${captured} is catalogued.`, 'The next evolution branch is now visible in your research notes.'); leaveBattle(); } else { addLog(`${state.target.name} broke the capsule seal.`); setMessage(`${state.target.name} resisted capture.`, 'The signal is still weak enough to try again.'); showToast('Capture failed — keep reading the field.'); } }
 function tryMove(direction) { if (state.mode !== 'world') return; const current = { x: Math.round(state.playerPosition.x + 4), y: Math.round(state.playerPosition.z + 4), facing: state.playerPosition.facing }; const next = movePlayer(['........', '........', '........', '........', '........', '........', '........', '........'], current, direction); state.playerPosition = { ...state.playerPosition, x: next.x - 4, z: next.y - 4, facing: direction }; state.steps += 1; if (state.playerMesh) { state.playerMesh.position.x = state.playerPosition.x; state.playerMesh.position.z = state.playerPosition.z; } if (Math.abs(state.playerPosition.x - HABITAT.grass.x) < 1.2 && Math.abs(state.playerPosition.z - HABITAT.grass.z) < 1.2 && state.steps > 2) startEncounter(); }
 function handleKey(event) { const key = event.key.toLowerCase(); if (state.mode === 'battle') { if (key >= '1' && key <= '4') performMove(PLAYER_MOVES[Number(key) - 1]); else if (key === ' ' && !captureButton.hidden) captureTarget(); else if (key === 'escape') leaveBattle(); return; } const direction = { w: 'up', arrowup: 'up', s: 'down', arrowdown: 'down', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right' }[key]; if (direction) { event.preventDefault(); tryMove(direction); } }
