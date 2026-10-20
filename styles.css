@@ -50,3 +50,23 @@
 @media (pointer:coarse){
   button{min-height:44px}.move-button:hover,.action-button:hover{transform:none}
 }
+
+@media (max-width:640px){
+  /* Keep the decision surface in the thumb zone during encounters. */
+  body.battle-active{padding-bottom:260px}
+  body.battle-active .battle-block{position:fixed;left:12px;right:12px;bottom:max(10px,env(safe-area-inset-bottom));z-index:30;max-height:248px;overflow:auto;margin:0;padding:11px;background:var(--paper-light);box-shadow:0 -5px 0 var(--coral),6px 7px 0 rgba(17,43,41,.2)}
+  body.battle-active .battle-block .block-heading{margin-bottom:8px;padding-bottom:7px}
+  body.battle-active .battle-block .block-heading h2{font-size:1.08rem}
+  body.battle-active .battle-block .move-grid{gap:6px}
+  body.battle-active .battle-block .move-button{min-height:68px;padding:8px}
+  body.battle-active .battle-block .move-button strong{font-size:.7rem}
+  body.battle-active .battle-block .move-button small{margin-top:3px;font-size:.49rem}
+  body.battle-active .battle-block .move-button em{display:none}
+  body.battle-active .battle-block .action-button,body.battle-active .battle-block .text-button{min-height:42px;padding:9px;margin-top:7px;font-size:.68rem}
+}
+
+@media (max-width:360px){
+  body.battle-active{padding-bottom:244px}
+  body.battle-active .battle-block{left:8px;right:8px;max-height:232px;padding:9px}
+  body.battle-active .battle-block .move-button{min-height:62px}
+}
