@@ -42,6 +42,9 @@ const leaveButton = document.querySelector('#leave-button');
 const fieldLog = document.querySelector('#field-log');
 const capturedList = document.querySelector('#captured-list');
 const capturedCount = document.querySelector('#captured-count');
+const potionCount = document.querySelector('#potion-count');
+const usePotionButton = document.querySelector('#use-potion-button');
+const usePotionBattleButton = document.querySelector('#use-potion-battle');
 const touchControls = document.querySelector('.touch-controls');
 const toast = document.querySelector('#toast');
 const liveRegion = document.querySelector('#live-region');
@@ -61,6 +64,8 @@ const state = {
   steps: 0,
   lastEncounterStep: -Infinity,
   captured: loadCaptured(),
+  bag: loadBag(),
+  animation: null,
 };
 
 const scene = new THREE.Scene();
@@ -112,6 +117,19 @@ function saveCaptured() {
   localStorage.setItem('grenmon-captured', JSON.stringify(state.captured.filter((id) => id !== 'spriggle')));
 }
 
+function loadBag() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('grenmon-bag') || '{}');
+    return { potions: Number.isFinite(stored.potions) ? Math.max(0, Math.floor(stored.potions)) : 3 };
+  } catch {
+    return { potions: 3 };
+  }
+}
+
+function saveBag() {
+  localStorage.setItem('grenmon-bag', JSON.stringify(state.bag));
+}
+
 function renderCaptured() {
   capturedCount.textContent = String(state.captured.length).padStart(2, '0');
   capturedList.innerHTML = state.captured.map((id) => {
@@ -119,6 +137,28 @@ function renderCaptured() {
     const type = monster.type === 'ember' ? 'ember' : monster.type === 'tide' ? 'tide' : 'leaf';
     return `<li><span class="captured-mark ${type}">${monster.name.slice(0, 1)}</span><span><strong>${monster.name}</strong><small>${monster.species.toUpperCase()} / ${TYPES[monster.type].label.toUpperCase()}</small></span><em>LV ${String(monster.level).padStart(2, '0')}</em></li>`;
   }).join('');
+}
+
+function renderBag() {
+  const count = String(state.bag.potions).padStart(2, '0');
+  potionCount.textContent = count;
+  const disabled = state.bag.potions <= 0 || state.player.hp >= state.player.maxHp;
+  usePotionButton.disabled = disabled;
+  usePotionBattleButton.disabled = disabled;
+}
+
+function usePotion() {
+  if (state.bag.potions <= 0) { showToast('The field bag is out of potions.'); return; }
+  if (state.player.hp >= state.player.maxHp) { showToast('Spriggle is already at full vitals.'); return; }
+  state.bag.potions -= 1;
+  state.player = { ...state.player, hp: state.player.maxHp };
+  saveBag();
+  updatePlayerUi();
+  updateBattleHealthBars();
+  renderBag();
+  if (state.mode === 'battle') addLog('Field potion restored Spriggle to full vitals.'); else liveRegion.textContent = 'Field potion restored Spriggle to full vitals.';
+  setMessage('Vitals restored.', 'The field bag is lighter, but your active specimen is ready to keep going.');
+  showToast('Potion used — full health restored.');
 }
 
 function monsterMesh(monster, facing = 1) {
@@ -174,6 +214,31 @@ function updateHealthBar(group, current, maximum) {
 function updateBattleHealthBars() {
   updateHealthBar(state.playerMesh, state.player.hp, state.player.maxHp);
   updateHealthBar(state.targetMesh, state.target?.hp || 0, state.target?.maxHp || 1);
+}
+
+function playBattleAnimation() {
+  if (state.mode !== 'battle' || !state.playerMesh || !state.targetMesh) return;
+  state.animation = { started: performance.now(), duration: 720, attacker: state.playerMesh, defender: state.targetMesh };
+}
+
+function animateBattle() {
+  if (!state.animation) return;
+  const animation = state.animation;
+  const progress = Math.min(1, (performance.now() - animation.started) / animation.duration);
+  const attackPhase = progress < .58 ? progress / .58 : 1;
+  const returnPhase = progress > .58 ? (progress - .58) / .42 : 0;
+  const lunge = Math.sin(Math.min(1, attackPhase) * Math.PI) * .75;
+  const hitShake = progress > .48 && progress < .8 ? Math.sin((progress - .48) * 38) * .12 : 0;
+  const attackerBase = animation.attacker.userData.basePosition;
+  const defenderBase = animation.defender.userData.basePosition;
+  if (attackerBase) animation.attacker.position.x = attackerBase.x + lunge;
+  if (defenderBase) { animation.defender.position.x = defenderBase.x + hitShake; animation.defender.rotation.z = hitShake * .35; }
+  if (returnPhase > 0 && attackerBase) animation.attacker.position.x = attackerBase.x;
+  if (progress >= 1) {
+    if (attackerBase) animation.attacker.position.copy(attackerBase);
+    if (defenderBase) { animation.defender.position.copy(defenderBase); animation.defender.rotation.z = 0; }
+    state.animation = null;
+  }
 }
 
 function adventurerMesh() {
@@ -276,14 +341,14 @@ function buildBattle() {
   const arenaStone = new THREE.Mesh(new THREE.DodecahedronGeometry(.7, 0), material(palette.stone)); arenaStone.position.set(-4, .55, 2.5); arenaStone.castShadow = true; group.add(arenaStone);
   const arenaTree = makeTree(4, 2.6, .75); group.add(arenaTree);
   const ring = new THREE.Mesh(new THREE.TorusGeometry(3.4, .06, 4, 8), material(palette.coral)); ring.rotation.x = Math.PI / 2; ring.position.y = .04; group.add(ring);
-  state.targetMesh = monsterMesh(state.target, -1); addBattleHealthBar(state.targetMesh, palette.coral); state.targetMesh.position.set(2.5, 0, -.6); state.targetMesh.scale.setScalar(1.12); group.add(state.targetMesh);
-  state.playerMesh = monsterMesh(state.player, 1); addBattleHealthBar(state.playerMesh, palette.citron); state.playerMesh.position.set(-2.5, 0, .8); state.playerMesh.scale.setScalar(1.05); group.add(state.playerMesh);
+  state.targetMesh = monsterMesh(state.target, -1); addBattleHealthBar(state.targetMesh, palette.coral); state.targetMesh.position.set(2.5, 0, -.6); state.targetMesh.userData.basePosition = state.targetMesh.position.clone(); state.targetMesh.scale.setScalar(1.12); group.add(state.targetMesh);
+  state.playerMesh = monsterMesh(state.player, 1); addBattleHealthBar(state.playerMesh, palette.citron); state.playerMesh.position.set(-2.5, 0, .8); state.playerMesh.userData.basePosition = state.playerMesh.position.clone(); state.playerMesh.scale.setScalar(1.05); group.add(state.playerMesh);
   updateBattleHealthBars();
   camera.position.set(9, 7, 11); camera.lookAt(0, .7, 0); camera.zoom = 1.05; camera.updateProjectionMatrix();
 }
 
 function resize() { const width = root.clientWidth; const height = Math.max(280, root.clientHeight || Math.min(680, width * .68)); renderer.setSize(width, height, false); if (state.mode === 'world') { camera.left = -9; camera.right = 9; camera.top = 5.8; camera.bottom = -5.8; } else { camera.left = -8; camera.right = 8; camera.top = 5; camera.bottom = -5; } camera.updateProjectionMatrix(); }
-function animate() { requestAnimationFrame(animate); if (state.playerMesh) state.playerMesh.rotation.y = Math.sin(performance.now() * .002) * .025; if (state.targetMesh) state.targetMesh.rotation.y = Math.sin(performance.now() * .002 + 1) * .035; renderer.render(scene, camera); }
+function animate() { requestAnimationFrame(animate); if (state.playerMesh) state.playerMesh.rotation.y = Math.sin(performance.now() * .002) * .025; if (state.targetMesh) state.targetMesh.rotation.y = Math.sin(performance.now() * .002 + 1) * .035; animateBattle(); renderer.render(scene, camera); }
 
 function updatePlayerUi() { playerName.textContent = state.player.name; playerSpecies.textContent = `${state.player.species.toUpperCase()} / ${TYPES[state.player.type].label.toUpperCase()}`; playerLevel.textContent = String(state.player.level).padStart(2, '0'); playerHp.textContent = `${state.player.hp} / ${state.player.maxHp}`; updateMeter(playerHpMeter, state.player.hp, state.player.maxHp); }
 function updateTargetUi() { if (!state.target) return; targetName.textContent = state.target.name; targetSpecies.textContent = `${state.target.species.toUpperCase()} / ${TYPES[state.target.type].label.toUpperCase()}`; targetHp.textContent = `${state.target.hp} / ${state.target.maxHp}`; updateMeter(targetHpMeter, state.target.hp, state.target.maxHp); const ready = canCapture(state.target, state.condition); captureLabel.textContent = ready ? 'SIGNAL WEAKENED — READY' : 'TRACKED — NOT READY'; captureChanceLabel.textContent = `CAPTURE ODDS ${Math.round(captureChance(state.target, state.condition) * 100)}%`; captureButton.hidden = !ready; }
@@ -291,7 +356,7 @@ function renderMoves() { moveGrid.innerHTML = PLAYER_MOVES.map((id, index) => { 
 function showBattleUi() { targetBlock.hidden = false; battleBlock.hidden = false; document.body.classList.add('battle-active'); modeLabel.textContent = 'ENCOUNTER / LIVE'; sceneKicker.textContent = 'ENCOUNTER 01 / SPECIMEN PROTOCOL'; sceneReadout.textContent = 'FIXED ARENA / 3D'; setMessage(`Wild ${state.target.name} detected.`, 'Read its type, choose a move, and weaken the signal before deploying a field capsule.'); renderMoves(); updateTargetUi(); }
 function leaveBattle() { state.mode = 'world'; state.target = null; document.body.classList.remove('battle-active'); setCondition('clear'); targetBlock.hidden = true; battleBlock.hidden = true; modeLabel.textContent = 'HABITAT / LIVE'; sceneKicker.textContent = 'HABITAT 01 / SUNWAKE MEADOW'; sceneReadout.textContent = 'FIELD OF VIEW 42°'; sceneCaption.innerHTML = '<strong>Track the rustle.</strong><span>Move with WASD or arrow keys. Search the marked grass patches for a specimen.</span>'; buildWorld(); resize(); setMessage('The meadow settles.', 'A good field researcher knows when to leave a signal undisturbed.'); }
 function startEncounter() { state.mode = 'battle'; state.target = cloneMonster(MONSTERS[encounterForHabitat(Math.random())]); state.battleLog = [`${state.target.name} emerged from the grass.`]; setCondition('clear'); buildBattle(); resize(); showBattleUi(); addLog(`${state.target.name} emerged from the grass.`); }
-function performMove(moveId) { if (!state.target || state.target.hp <= 0) return; const move = MOVES[moveId]; setCondition(move.condition); const result = resolveTurn({ player: state.player, enemy: state.target, moveId, condition: state.condition, roll: Math.random() }); state.player = result.player; state.target = result.enemy; addLog(result.log[0]); if (result.log[1]) addLog(result.log[1]); updatePlayerUi(); updateTargetUi(); updateBattleHealthBars(); if (result.outcome === 'victory') { setMessage(`${state.target.name} is still.`, 'The signal is weakened enough to capture. Deploy a field capsule or leave the habitat.'); showToast('Signal weakened — capture window open.'); } else if (result.outcome === 'defeat') { setMessage('Spriggle needs a rest.', 'The field was too hot. Return to the meadow and try another approach.'); showToast('Your active specimen fainted.'); } else { setMessage(`${state.target.name} is reading the field.`, `${TYPES[state.target.type].label} against ${TYPES[state.player.type].label}. Use the condition markers to find an edge.`); } }
+function performMove(moveId) { if (!state.target || state.target.hp <= 0) return; const move = MOVES[moveId]; setCondition(move.condition); const result = resolveTurn({ player: state.player, enemy: state.target, moveId, condition: state.condition, roll: Math.random() }); state.player = result.player; state.target = result.enemy; addLog(result.log[0]); if (result.log[1]) addLog(result.log[1]); updatePlayerUi(); updateTargetUi(); updateBattleHealthBars(); renderBag(); playBattleAnimation(); if (result.outcome === 'victory') { setMessage(`${state.target.name} is still.`, 'The signal is weakened enough to capture. Deploy a field capsule or leave the habitat.'); showToast('Signal weakened — capture window open.'); } else if (result.outcome === 'defeat') { setMessage('Spriggle needs a rest.', 'The field was too hot. Return to the meadow and try another approach.'); showToast('Your active specimen fainted.'); } else { setMessage(`${state.target.name} is reading the field.`, `${TYPES[state.target.type].label} against ${TYPES[state.player.type].label}. Use the condition markers to find an edge.`); } }
 function captureTarget() { if (!state.target || !canCapture(state.target, state.condition)) return; const chance = captureChance(state.target, state.condition); if (Math.random() <= chance) { const captured = state.target.name; if (!state.captured.includes(state.target.id)) { state.captured.push(state.target.id); saveCaptured(); renderCaptured(); } addLog(`${captured} accepted the field capsule.`); showToast(`${captured} joined the field log.`); setMessage(`${captured} is catalogued.`, 'The next evolution branch is now visible in your research notes.'); leaveBattle(); } else { addLog(`${state.target.name} broke the capsule seal.`); setMessage(`${state.target.name} resisted capture.`, 'The signal is still weak enough to try again.'); showToast('Capture failed — keep reading the field.'); } }
 function isInGrass(position) { return HABITAT.grassPatches.some((patch) => Math.abs(position.x - patch.x) < 1.15 && Math.abs(position.z - patch.z) < 1.15); }
 function tryMove(direction) { if (state.mode !== 'world') return; const current = { x: Math.round(state.playerPosition.x + 4), y: Math.round(state.playerPosition.z + 4), facing: state.playerPosition.facing }; const next = movePlayer(['........', '........', '........', '........', '........', '........', '........', '........'], current, direction); state.playerPosition = { ...state.playerPosition, x: next.x - 4, z: next.y - 4, facing: direction }; state.steps += 1; if (state.playerMesh) { state.playerMesh.position.x = state.playerPosition.x; state.playerMesh.position.z = state.playerPosition.z; } const readyForSpawn = state.steps > 2 && state.steps - state.lastEncounterStep >= 2; if (isInGrass(state.playerPosition) && readyForSpawn && Math.random() < 0.62) { state.lastEncounterStep = state.steps; startEncounter(); } }
@@ -300,6 +365,8 @@ function handleKey(event) { const key = event.key.toLowerCase(); if (state.mode 
 document.addEventListener('keydown', handleKey);
 touchControls.querySelectorAll('[data-direction]').forEach((button) => button.addEventListener('pointerdown', (event) => { event.preventDefault(); tryMove(button.dataset.direction); }));
 captureButton.addEventListener('click', captureTarget);
+usePotionButton.addEventListener('click', usePotion);
+usePotionBattleButton.addEventListener('click', usePotion);
 leaveButton.addEventListener('click', leaveBattle);
 window.addEventListener('resize', resize);
-updatePlayerUi(); renderCaptured(); buildWorld(); resize(); animate();
+updatePlayerUi(); renderCaptured(); renderBag(); buildWorld(); resize(); animate();

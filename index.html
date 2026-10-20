@@ -63,10 +63,16 @@
             <p class="evolution-line">NEXT FORM <strong>Bloomlet</strong> <span>branch at LV 09</span></p>
           </section>
 
-          <section class="research-block captured-block">
-            <div class="block-heading"><h2>Captured log</h2><span id="captured-count">01</span></div>
-            <ul id="captured-list" class="captured-list" aria-live="polite"></ul>
-          </section>
+           <section class="research-block captured-block">
+             <div class="block-heading"><h2>Captured log</h2><span id="captured-count">01</span></div>
+             <ul id="captured-list" class="captured-list" aria-live="polite"></ul>
+           </section>
+
+           <section class="research-block bag-block">
+             <div class="block-heading"><h2>Field bag</h2><span>ITEMS</span></div>
+             <div class="bag-item"><span class="potion-mark" aria-hidden="true"></span><span><strong>Field potion</strong><small>RESTORE ACTIVE SPECIMEN TO FULL VITALS</small></span><b id="potion-count">03</b></div>
+             <button id="use-potion-button" class="text-button potion-button" type="button">Use potion <span>FULL HEAL</span></button>
+           </section>
 
           <section id="target-block" class="research-block target-block" hidden>
             <div class="block-heading"><h2>Wild signal</h2><span>02</span></div>
@@ -79,8 +85,9 @@
           <section id="battle-block" class="research-block battle-block" hidden>
             <div class="block-heading"><h2>Choose a move</h2><span>03</span></div>
             <div id="move-grid" class="move-grid"></div>
-            <button id="capture-button" class="action-button capture-button" type="button" hidden>Deploy field capsule <span>SPACE</span></button>
-            <button id="leave-button" class="text-button" type="button">Leave encounter <span>ESC</span></button>
+             <button id="capture-button" class="action-button capture-button" type="button" hidden>Deploy field capsule <span>SPACE</span></button>
+             <button id="use-potion-battle" class="text-button potion-button" type="button">Use field potion <span>FULL HEAL</span></button>
+             <button id="leave-button" class="text-button" type="button">Leave encounter <span>ESC</span></button>
           </section>
 
           <section class="research-block roster-block">
