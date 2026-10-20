@@ -30,6 +30,7 @@ The game is played in a desktop browser with a keyboard. Arrow keys or WASD move
 
 - First slice: one angled habitat, movement, tracked encounters, one active monster per side, four moves, six type families, field conditions, weakening, and capture.
 - Captured monsters are shown in a local field log and persist through browser refreshes using local storage.
+- The habitat encounter pool includes distinct Stone, Gale, and Shade specimens alongside the original Leaf, Ember, and Tide families.
 - Battle presentation: a fixed-camera low-poly arena with readable HTML research controls.
 - Player identity: a human field researcher is the exploration avatar; monsters are companions and wild specimens, not the player character.
 - Monster identity: authored silhouettes, type roles, and branching evolution paths.

@@ -27,6 +27,8 @@ const targetBlock = document.querySelector('#target-block');
 const battleBlock = document.querySelector('#battle-block');
 const targetName = document.querySelector('#target-name');
 const targetSpecies = document.querySelector('#target-species');
+const playerBadge = document.querySelector('#player-badge');
+const targetBadge = document.querySelector('#target-badge');
 const targetHp = document.querySelector('#target-hp');
 const targetHpMeter = document.querySelector('#target-hp-meter');
 const captureLabel = document.querySelector('#capture-label');
@@ -134,9 +136,13 @@ function renderCaptured() {
   capturedCount.textContent = String(state.captured.length).padStart(2, '0');
   capturedList.innerHTML = state.captured.map((id) => {
     const monster = MONSTERS[id];
-    const type = monster.type === 'ember' ? 'ember' : monster.type === 'tide' ? 'tide' : 'leaf';
+    const type = monster.type;
     return `<li><span class="captured-mark ${type}">${monster.name.slice(0, 1)}</span><span><strong>${monster.name}</strong><small>${monster.species.toUpperCase()} / ${TYPES[monster.type].label.toUpperCase()}</small></span><em>LV ${String(monster.level).padStart(2, '0')}</em></li>`;
   }).join('');
+}
+
+function setBadgeType(element, type) {
+  element.className = `monster-badge ${type}-badge`;
 }
 
 function renderBag() {
@@ -350,8 +356,8 @@ function buildBattle() {
 function resize() { const width = root.clientWidth; const height = Math.max(280, root.clientHeight || Math.min(680, width * .68)); renderer.setSize(width, height, false); if (state.mode === 'world') { camera.left = -9; camera.right = 9; camera.top = 5.8; camera.bottom = -5.8; } else { camera.left = -8; camera.right = 8; camera.top = 5; camera.bottom = -5; } camera.updateProjectionMatrix(); }
 function animate() { requestAnimationFrame(animate); if (state.playerMesh) state.playerMesh.rotation.y = Math.sin(performance.now() * .002) * .025; if (state.targetMesh) state.targetMesh.rotation.y = Math.sin(performance.now() * .002 + 1) * .035; animateBattle(); renderer.render(scene, camera); }
 
-function updatePlayerUi() { playerName.textContent = state.player.name; playerSpecies.textContent = `${state.player.species.toUpperCase()} / ${TYPES[state.player.type].label.toUpperCase()}`; playerLevel.textContent = String(state.player.level).padStart(2, '0'); playerHp.textContent = `${state.player.hp} / ${state.player.maxHp}`; updateMeter(playerHpMeter, state.player.hp, state.player.maxHp); }
-function updateTargetUi() { if (!state.target) return; targetName.textContent = state.target.name; targetSpecies.textContent = `${state.target.species.toUpperCase()} / ${TYPES[state.target.type].label.toUpperCase()}`; targetHp.textContent = `${state.target.hp} / ${state.target.maxHp}`; updateMeter(targetHpMeter, state.target.hp, state.target.maxHp); const ready = canCapture(state.target, state.condition); captureLabel.textContent = ready ? 'SIGNAL WEAKENED — READY' : 'TRACKED — NOT READY'; captureChanceLabel.textContent = `CAPTURE ODDS ${Math.round(captureChance(state.target, state.condition) * 100)}%`; captureButton.hidden = !ready; }
+function updatePlayerUi() { playerName.textContent = state.player.name; playerSpecies.textContent = `${state.player.species.toUpperCase()} / ${TYPES[state.player.type].label.toUpperCase()}`; playerLevel.textContent = String(state.player.level).padStart(2, '0'); playerHp.textContent = `${state.player.hp} / ${state.player.maxHp}`; setBadgeType(playerBadge, state.player.type); updateMeter(playerHpMeter, state.player.hp, state.player.maxHp); }
+function updateTargetUi() { if (!state.target) return; targetName.textContent = state.target.name; targetSpecies.textContent = `${state.target.species.toUpperCase()} / ${TYPES[state.target.type].label.toUpperCase()}`; setBadgeType(targetBadge, state.target.type); targetHp.textContent = `${state.target.hp} / ${state.target.maxHp}`; updateMeter(targetHpMeter, state.target.hp, state.target.maxHp); const ready = canCapture(state.target, state.condition); captureLabel.textContent = ready ? 'SIGNAL WEAKENED — READY' : 'TRACKED — NOT READY'; captureChanceLabel.textContent = `CAPTURE ODDS ${Math.round(captureChance(state.target, state.condition) * 100)}%`; captureButton.hidden = !ready; }
 function renderMoves() { moveGrid.innerHTML = PLAYER_MOVES.map((id, index) => { const move = MOVES[id]; return `<button class="move-button" data-move="${id}" type="button"><strong>${index + 1}. ${move.name}</strong><small>${TYPES[move.type].label.toUpperCase()} / ${move.power} PWR</small><em>${move.description}</em></button>`; }).join(''); moveGrid.querySelectorAll('[data-move]').forEach((button) => button.addEventListener('click', () => performMove(button.dataset.move))); }
 function showBattleUi() { targetBlock.hidden = false; battleBlock.hidden = false; document.body.classList.add('battle-active'); modeLabel.textContent = 'ENCOUNTER / LIVE'; sceneKicker.textContent = 'ENCOUNTER 01 / SPECIMEN PROTOCOL'; sceneReadout.textContent = 'FIXED ARENA / 3D'; setMessage(`Wild ${state.target.name} detected.`, 'Read its type, choose a move, and weaken the signal before deploying a field capsule.'); renderMoves(); updateTargetUi(); }
 function leaveBattle() { state.mode = 'world'; state.target = null; document.body.classList.remove('battle-active'); setCondition('clear'); targetBlock.hidden = true; battleBlock.hidden = true; modeLabel.textContent = 'HABITAT / LIVE'; sceneKicker.textContent = 'HABITAT 01 / SUNWAKE MEADOW'; sceneReadout.textContent = 'FIELD OF VIEW 42°'; sceneCaption.innerHTML = '<strong>Track the rustle.</strong><span>Move with WASD or arrow keys. Search the marked grass patches for a specimen.</span>'; buildWorld(); resize(); setMessage('The meadow settles.', 'A good field researcher knows when to leave a signal undisturbed.'); }

@@ -42,6 +42,18 @@ export const MONSTERS = {
     id: 'tidefin', name: 'Tidefin', species: 'Pond Runner', level: 3, type: 'tide', maxHp: 31,
     color: '#63b9d5', accent: '#d1f4ed', captureRate: 0.56, evolution: 'marrowhale',
   },
+  pebblit: {
+    id: 'pebblit', name: 'Pebblit', species: 'Stone Pup', level: 3, type: 'stone', maxHp: 33,
+    color: '#c7a873', accent: '#f0ddb0', captureRate: 0.5,
+  },
+  zephyroo: {
+    id: 'zephyroo', name: 'Zephyroo', species: 'Gale Hopper', level: 4, type: 'gale', maxHp: 30,
+    color: '#e6c65b', accent: '#fff0a8', captureRate: 0.48,
+  },
+  duskmite: {
+    id: 'duskmite', name: 'Duskmite', species: 'Shade Moth', level: 4, type: 'shade', maxHp: 28,
+    color: '#8d7bc2', accent: '#d9d0ff', captureRate: 0.46,
+  },
   bloomlet: { id: 'bloomlet', name: 'Bloomlet', species: 'Canopy Sprite', level: 9, type: 'leaf', maxHp: 58, color: '#88b94e', accent: '#f2efb3', captureRate: 1 },
   pyrolion: { id: 'pyrolion', name: 'Pyrolion', species: 'Sun Mane', level: 9, type: 'ember', maxHp: 60, color: '#df5949', accent: '#ffd0a6', captureRate: 1 },
   marrowhale: { id: 'marrowhale', name: 'Marrowhale', species: 'Deep Current', level: 9, type: 'tide', maxHp: 62, color: '#438fb5', accent: '#d1f4ed', captureRate: 1 },
@@ -86,7 +98,7 @@ export function movePlayer(map, position, direction) {
   return map[next.y]?.[next.x] !== '#' ? next : { ...position, facing: direction };
 }
 
-export function encounterForHabitat(roll, choices = ['embercub', 'tidefin']) {
+export function encounterForHabitat(roll, choices = ['embercub', 'pebblit', 'zephyroo', 'duskmite', 'tidefin']) {
   const index = Math.min(choices.length - 1, Math.floor(Math.max(0, Math.min(0.999, roll)) * choices.length));
   return choices[index];
 }

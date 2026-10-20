@@ -10,6 +10,7 @@ GrenMon is an original browser monster-hunter RPG built around a semi-2D/3D low-
 - Use six type families and field conditions such as Clear air, Silver mist, and Charged soil.
 - Weaken the target, then deploy a field capsule to attempt capture.
 - Review the captured-monster log; it persists locally in the browser.
+- Encounter a wider field pool including Embercub, Tidefin, Pebblit, Zephyroo, and Duskmite.
 - See branching evolution paths in the field notes for Spriggle, Embercub, and Tidefin.
 
 This is the first vertical slice. Saving, inventory, multiple maps, quests, sound, multiplayer, and long-form progression are intentionally out of scope until the research loop is solid.

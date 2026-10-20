@@ -89,3 +89,5 @@
   body.battle-active .battle-block .potion-button{display:flex}
   .bag-item small{font-size:.5rem}
 }
+
+.stone-badge{background:var(--paper-deep)}.gale-badge{background:#e6c65b}.shade-badge{background:#8d7bc2}

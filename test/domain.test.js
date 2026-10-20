@@ -51,6 +51,11 @@ test('habitat encounters select from the local specimen pool', () => {
   assert.equal(encounterForHabitat(0.99), 'tidefin');
 });
 
+test('the expanded habitat pool includes multiple new specimen types', () => {
+  const encounters = [0, .2, .4, .6, .99].map((roll) => encounterForHabitat(roll));
+  assert.deepEqual(encounters, ['embercub', 'pebblit', 'zephyroo', 'duskmite', 'tidefin']);
+});
+
 test('a turn applies damage, records an advantage, and allows capture after weakening', () => {
   const player = cloneMonster(MONSTERS.spriggle);
   const enemy = cloneMonster(MONSTERS.tidefin);
